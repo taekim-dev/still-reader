@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
 import { JSDOM } from 'jsdom';
+import { describe, expect, it } from 'vitest';
+
 import { extractArticle } from '../src/extraction/extractor';
 
 const runExtraction = (html: string, url = 'https://example.com/page'): ReturnType<typeof extractArticle> => {
