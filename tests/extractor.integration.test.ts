@@ -25,5 +25,21 @@ describe('extractArticle integration - real pages', () => {
     expect(result.html).not.toContain('<script');
     expect(result.html).not.toContain('<iframe');
   });
+
+  it('extracts CNET article content with sufficient confidence', () => {
+    const html = fixture('cnet-galaxy-chip-full.html');
+    const dom = new JSDOM(html, {
+      url: 'https://www.cnet.com/tech/mobile/why-samsungs-latest-chip-breakthrough-matters-for-upcoming-galaxy-phones/',
+    });
+
+    const result = extractArticle(dom.window.document);
+    expect(result.unavailable).toBeFalsy();
+    if (result.unavailable) return;
+
+    expect(result.confidence).toBeGreaterThan(0.35);
+    expect(result.text.toLowerCase()).toContain('samsung');
+    expect(result.html).not.toContain('<script');
+    expect(result.html).not.toContain('<iframe');
+  });
 });
 
