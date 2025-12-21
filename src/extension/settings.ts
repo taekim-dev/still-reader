@@ -4,18 +4,43 @@
 
 import { AIConfig, getAIConfig, saveAIConfig, clearAIConfig } from './storage';
 
-// UI elements
-const form = document.getElementById('settings-form') as HTMLFormElement;
-const statusEl = document.getElementById('status') as HTMLElement;
-const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
-const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
-const providerSelect = document.getElementById('provider') as HTMLSelectElement;
-const customApiGroup = document.getElementById('custom-api-group') as HTMLElement;
+// UI elements - wait for DOM
+let form: HTMLFormElement | null = null;
+let statusEl: HTMLElement | null = null;
+let saveBtn: HTMLButtonElement | null = null;
+let clearBtn: HTMLButtonElement | null = null;
+let providerSelect: HTMLSelectElement | null = null;
+let customApiGroup: HTMLElement | null = null;
 
-// Show/hide custom API URL field based on provider
-providerSelect.addEventListener('change', () => {
-  customApiGroup.style.display = providerSelect.value === 'custom' ? 'block' : 'none';
-});
+function getElements(): void {
+  form = document.getElementById('settings-form') as HTMLFormElement;
+  statusEl = document.getElementById('status') as HTMLElement;
+  saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
+  clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
+  providerSelect = document.getElementById('provider') as HTMLSelectElement;
+  customApiGroup = document.getElementById('custom-api-group') as HTMLElement;
+
+  console.log('Elements found:', {
+    form: !!form,
+    statusEl: !!statusEl,
+    saveBtn: !!saveBtn,
+    clearBtn: !!clearBtn,
+    providerSelect: !!providerSelect,
+    customApiGroup: !!customApiGroup,
+  });
+
+  if (!form || !statusEl || !saveBtn || !clearBtn || !providerSelect || !customApiGroup) {
+    console.error('Some elements are missing!');
+    return;
+  }
+
+  // Show/hide custom API URL field based on provider
+  providerSelect.addEventListener('change', () => {
+    if (customApiGroup) {
+      customApiGroup.style.display = providerSelect!.value === 'custom' ? 'block' : 'none';
+    }
+  });
+}
 
 // Load existing settings
 async function initSettings(): Promise<void> {
@@ -46,18 +71,36 @@ async function initSettings(): Promise<void> {
 }
 
 function showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
+  if (!statusEl) {
+    console.error('statusEl is null, cannot show status');
+    return;
+  }
   statusEl.textContent = message;
   statusEl.className = `status ${type}`;
   setTimeout(() => {
-    statusEl.className = 'status';
-    statusEl.textContent = '';
+    if (statusEl) {
+      statusEl.className = 'status';
+      statusEl.textContent = '';
+    }
   }, 5000);
 }
 
 // Save settings - use button click instead of form submit to avoid URL params
-saveBtn.addEventListener('click', async () => {
-  try {
-    const formData = new FormData(form);
+function setupSaveHandler(): void {
+  if (!saveBtn || !form) {
+    console.error('Save button or form not found, cannot setup handler');
+    return;
+  }
+
+  console.log('Setting up save button handler');
+  saveBtn.addEventListener('click', async () => {
+    console.log('Save button clicked!');
+    try {
+      if (!form) {
+        console.error('Form is null');
+        return;
+      }
+      const formData = new FormData(form);
     const apiKey = (formData.get('apiKey') as string)?.trim();
     
     if (!apiKey) {
@@ -88,10 +131,17 @@ saveBtn.addEventListener('click', async () => {
     showStatus(`Failed to save settings: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
     console.error('Save error:', error);
   }
-});
+  });
+}
 
 // Clear settings
-clearBtn.addEventListener('click', async () => {
+function setupClearHandler(): void {
+  if (!clearBtn || !form) {
+    console.error('Clear button or form not found, cannot setup handler');
+    return;
+  }
+
+  clearBtn.addEventListener('click', async () => {
   if (!confirm('Are you sure you want to clear all AI settings?')) {
     return;
   }
@@ -105,8 +155,33 @@ clearBtn.addEventListener('click', async () => {
     showStatus('Failed to clear settings', 'error');
     console.error('Clear error:', error);
   }
-});
+  });
+}
 
 // Initialize on load
-initSettings();
+console.log('Settings script loaded, DOM ready state:', document.readyState);
+
+function initialize(): void {
+  getElements();
+  if (!form || !saveBtn || !clearBtn) {
+    console.error('Failed to get elements, retrying...');
+    setTimeout(initialize, 100);
+    return;
+  }
+
+  setupSaveHandler();
+  setupClearHandler();
+  initSettings();
+  console.log('Settings page initialized successfully');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded fired');
+    initialize();
+  });
+} else {
+  console.log('DOM already ready, initializing');
+  initialize();
+}
 
