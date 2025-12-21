@@ -61,6 +61,34 @@ describe('readerMode', () => {
     deactivateReader(document);
   });
 
+  it('updates font scale and theme via in-reader controls', () => {
+    const dom = new JSDOM(
+      `
+        <html><head><title>Test</title></head>
+        <body><article><p>Body</p></article></body></html>
+      `,
+      { url: 'https://example.com' },
+    );
+    const { document } = dom.window;
+
+    activateReader(document, { html: '<p>Body</p>', theme: 'light', fontScale: 1 });
+
+    const inc = document.getElementById('sr-font-inc');
+    const dec = document.getElementById('sr-font-dec');
+    const toggle = document.getElementById('sr-theme-toggle');
+
+    inc?.dispatchEvent(new dom.window.Event('click'));
+    expect(document.documentElement.style.getPropertyValue('--sr-font-scale')).toBe('1.1');
+
+    dec?.dispatchEvent(new dom.window.Event('click'));
+    expect(document.documentElement.style.getPropertyValue('--sr-font-scale')).toBe('1');
+
+    toggle?.dispatchEvent(new dom.window.Event('click'));
+    expect(document.body.getAttribute('data-theme')).toBe('dark');
+
+    deactivateReader(document);
+  });
+
   it('restores scroll position when deactivated', () => {
     const dom = new JSDOM(basePage, { url: 'https://example.com' });
     const { document } = dom.window;
