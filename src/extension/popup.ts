@@ -67,7 +67,26 @@ async function sendMessage(message: ReaderMessage): Promise<ReaderResponse> {
   if (currentTabId === null) {
     throw new Error('No active tab');
   }
-  return chrome.tabs.sendMessage(currentTabId, message);
+  try {
+    return await chrome.tabs.sendMessage(currentTabId, message);
+  } catch (error) {
+    // If content script isn't loaded, try to inject it
+    if (error instanceof Error && error.message.includes('Could not establish connection')) {
+      // Try to inject the content script programmatically
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: currentTabId },
+          files: ['content.js'],
+        });
+        // Wait a bit for the script to load, then retry
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return await chrome.tabs.sendMessage(currentTabId, message);
+      } catch (injectError) {
+        throw new Error(`Content script failed to load: ${injectError instanceof Error ? injectError.message : String(injectError)}`);
+      }
+    }
+    throw error;
+  }
 }
 
 // Event handlers
@@ -82,8 +101,14 @@ activateBtn.addEventListener('click', async () => {
       setStatus(`Failed: ${activateResponse.reason ?? 'unknown'}`, 'error');
     }
   } catch (error) {
-    setStatus('Failed to activate', 'error');
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    setStatus(`Failed: ${errorMessage}`, 'error');
     console.error('Activate error:', error);
+    
+    // If it's a "Could not establish connection" error, the content script might not be loaded
+    if (errorMessage.includes('Could not establish connection') || errorMessage.includes('Receiving end does not exist')) {
+      setStatus('Content script not loaded. Try refreshing the page.', 'error');
+    }
   }
 });
 
