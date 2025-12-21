@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 import { copyFileSync, mkdirSync, existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 
 // Plugin to copy manifest and popup HTML
 function copyExtensionFiles() {
@@ -24,10 +25,15 @@ function copyExtensionFiles() {
         resolve(distDir, 'popup.html')
       );
 
-      // Create icons directory placeholder (user should add actual icons)
+      // Generate icons
       const iconsDir = resolve(distDir, 'icons');
       if (!existsSync(iconsDir)) {
         mkdirSync(iconsDir, { recursive: true });
+      }
+      try {
+        execSync('node scripts/generate-icons.js', { stdio: 'inherit', cwd: resolve(__dirname) });
+      } catch (error) {
+        console.warn('Failed to generate icons:', error);
       }
     },
   };
