@@ -123,7 +123,16 @@ function setupSaveHandler(): void {
     }
 
     await saveAIConfig(config);
-    showStatus('Settings saved successfully!', 'success');
+    
+    // Verify it was saved
+    const saved = await getAIConfig();
+    
+    if (saved && saved.apiKey) {
+      showStatus('Settings saved successfully!', 'success');
+    } else {
+      showStatus('Settings saved but could not verify. Please try again.', 'error');
+      console.error('Save verification failed - config not found in storage');
+    }
     
     // Don't reload - keep the form values as they are since we just saved them
     // The values are already in the form fields

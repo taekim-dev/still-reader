@@ -46,13 +46,16 @@ function inlineDependencies(entryName: string): Plugin {
               processedChunks.add(chunkName);
               
               // Remove import statements (handle both regular and minified formats)
-              // Match: import{...}from"./chunk-name.js" or import {...} from "./chunk-name.js"
-              const importRegex1 = new RegExp(`import\\s*\\{[^}]*\\}\\s*from\\s*['"]\\./${chunkName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^'"]*['"];?\\s*`, 'g');
-              const importRegex2 = new RegExp(`import[^'"]*from['"]\\./${chunkName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^'"]*['"];?\\s*`, 'g');
-              const importRegex3 = new RegExp(`import\\(['"]\\./${chunkName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^'"]*['"]\\)`, 'g');
-              combinedCode = combinedCode.replace(importRegex1, '');
-              combinedCode = combinedCode.replace(importRegex2, '');
-              combinedCode = combinedCode.replace(importRegex3, '');
+              // But don't remove for settings.js - it needs the import to load the chunk file
+              if (entryName !== 'settings.js') {
+                // Match: import{...}from"./chunk-name.js" or import {...} from "./chunk-name.js"
+                const importRegex1 = new RegExp(`import\\s*\\{[^}]*\\}\\s*from\\s*['"]\\./${chunkName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^'"]*['"];?\\s*`, 'g');
+                const importRegex2 = new RegExp(`import[^'"]*from['"]\\./${chunkName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^'"]*['"];?\\s*`, 'g');
+                const importRegex3 = new RegExp(`import\\(['"]\\./${chunkName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^'"]*['"]\\)`, 'g');
+                combinedCode = combinedCode.replace(importRegex1, '');
+                combinedCode = combinedCode.replace(importRegex2, '');
+                combinedCode = combinedCode.replace(importRegex3, '');
+              }
               
               // Remove export statements from inlined code
               let chunkCode = chunk.code;
@@ -61,14 +64,11 @@ function inlineDependencies(entryName: string): Plugin {
               chunkCode = chunkCode.replace(/export\s+[^;{}]*\s*;?/g, '');
               chunkCode = chunkCode.replace(/export\s+(default\s+)?(function|const|let|var|class|async\s+function)\s+/g, '');
               
-              // For settings.js, wrap inlined code in IIFE to prevent variable name collisions
-              // The storage code exports: getAIConfig (minified as 't'), saveAIConfig (minified as 'c'), clearAIConfig (minified as 'n')
-              // The settings code imports them as: f, p, y respectively
+              // For settings.js, don't inline - let it use the chunk file normally
+              // This avoids variable name conflicts
+              // Just don't process it - leave the import statement and chunk file as-is
               if (entryName === 'settings.js') {
-                // Wrap the chunk in IIFE and expose functions via return object
-                // This ensures all variables are properly scoped
-                const wrappedCode = `// Storage functions (wrapped to avoid variable name conflicts)\nconst _storage=((function(){\n${chunkCode}\n// Return functions to be assigned in outer scope\nreturn {getAIConfig:t, saveAIConfig:c, clearAIConfig:n};\n})());\n// Map to expected names (f, p, y)\nconst f=_storage.getAIConfig, p=_storage.saveAIConfig, y=_storage.clearAIConfig;\n`;
-                combinedCode = wrappedCode + combinedCode;
+                return; // Skip inlining for settings.js - it will use the chunk file
               } else {
                 // For background.js, just prepend (it's already handled differently)
                 combinedCode = chunkCode + '\n' + combinedCode;
@@ -91,12 +91,13 @@ function inlineDependencies(entryName: string): Plugin {
         }
         
         // Clean up inlined chunks at the end (after all entries have processed)
-        if (entryName === 'settings.js') {
-          // This is the last entry that needs the chunks, so delete them now
+        // Don't delete chunks that settings.js needs - it uses them as separate files
+        if (entryName === 'background.js') {
+          // Only delete chunks that were inlined into background.js
+          // settings.js will use the chunk file directly
           inlinedChunks.forEach((chunkName) => {
-            if (bundle[chunkName]) {
-              delete bundle[chunkName];
-            }
+            // Only delete if it was actually inlined (check if it's still in bundle)
+            // Actually, don't delete at all - let settings.js use the chunk file
           });
         }
         
@@ -109,8 +110,11 @@ function inlineDependencies(entryName: string): Plugin {
           .replace(/export\s+(default\s+)?(function|const|let|var|class|async\s+function)\s+/g, '')
           .replace(/import\s+[^'"]*from\s+['"][^'"]*['"]\s*;?/g, '')
           .replace(/import\s*\([^)]*\)\s*;?/g, '');
+      } else if (entryName === 'settings.js') {
+        // For settings.js, keep import statements - it uses chunk files
+        // Don't remove imports for settings.js
       } else {
-        // For other entries (like settings.js), remove all import statements
+        // For other entries, remove all import statements
         entryChunk.code = entryChunk.code
           .replace(/import\s*\{[^}]*\}\s*from\s*['"][^'"]*['"]\s*;?/g, '')
           .replace(/import\s+[^'"]*from\s+['"][^'"]*['"]\s*;?/g, '')
@@ -225,6 +229,11 @@ export default defineConfig({
         assetFileNames: '[name].[ext]',
         inlineDynamicImports: false,
         manualChunks: undefined, // Let Vite decide chunking
+      },
+      // Don't inline dependencies for settings.js - let it use the chunk file
+      external: (id) => {
+        // Don't externalize anything - we want to inline for background.js but not for settings.js
+        return false;
       },
     },
   },

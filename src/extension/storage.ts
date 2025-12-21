@@ -40,7 +40,7 @@ export async function saveAIConfig(config: AIConfig): Promise<void> {
   try {
     await chrome.storage.sync.set({ [STORAGE_KEY]: config });
   } catch (error) {
-    console.error('Failed to save AI config:', error);
+    console.error('[Storage] Failed to save AI config:', error);
     throw error;
   }
 }
