@@ -74,5 +74,19 @@ function injectNotice(document: Document, message: string): void {
   document.body.appendChild(container);
 }
 
+/**
+ * Get article text for AI summarization.
+ * This is independent of reader mode activation - it just extracts text.
+ */
+export function getArticleText(document: Document): { ok: boolean; text?: string; reason?: string } {
+  const extraction = extractArticle(document);
+  
+  if ('unavailable' in extraction && extraction.unavailable) {
+    return { ok: false, reason: extraction.reason ?? 'unavailable' };
+  }
+  
+  return { ok: true, text: extraction.text };
+}
+
 export { isReaderActive };
 

@@ -107,6 +107,41 @@
       flex: 1;
     }
 
+    .summary-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+    }
+
+    .summary-content {
+      margin-top: 8px;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #555;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .summary-content.loading {
+      color: #999;
+      font-style: italic;
+    }
+
+    .settings-link {
+      display: block;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #666;
+      text-decoration: none;
+    }
+
+    .settings-link:hover {
+      color: #111;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -120,6 +155,11 @@
         <button id="font-dec" class="btn-secondary" disabled>−</button>
         <button id="font-inc" class="btn-secondary" disabled>+</button>
         <button id="theme-toggle" class="btn-secondary" disabled>Theme</button>
+      </div>
+      <div class="summary-section">
+        <button id="summarize" class="btn-secondary" disabled>Summarize</button>
+        <a href="#" id="settings-link" class="settings-link">⚙️ Configure AI Settings</a>
+        <div id="summary-content" class="summary-content" style="display: none;"></div>
       </div>
     </div>
   </div>

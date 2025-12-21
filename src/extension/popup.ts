@@ -3,7 +3,7 @@
  * the content script via Chrome messaging.
  */
 
-import { ReaderMessage, ReaderResponse } from './messages';
+import { ReaderMessage, ReaderResponse, SummarizeMessage, SummarizeResponse } from './messages';
 
 // UI elements
 const statusEl = document.getElementById('status') as HTMLElement;
@@ -12,6 +12,9 @@ const deactivateBtn = document.getElementById('deactivate') as HTMLButtonElement
 const fontDecBtn = document.getElementById('font-dec') as HTMLButtonElement;
 const fontIncBtn = document.getElementById('font-inc') as HTMLButtonElement;
 const themeToggleBtn = document.getElementById('theme-toggle') as HTMLButtonElement;
+const summarizeBtn = document.getElementById('summarize') as HTMLButtonElement;
+const summaryContentEl = document.getElementById('summary-content') as HTMLElement;
+const settingsLink = document.getElementById('settings-link') as HTMLAnchorElement;
 
 let currentTabId: number | null = null;
 
@@ -52,6 +55,7 @@ function updateUI(active: boolean): void {
   fontDecBtn.disabled = !active;
   fontIncBtn.disabled = !active;
   themeToggleBtn.disabled = !active;
+  summarizeBtn.disabled = !active;
 }
 
 async function sendMessage(message: ReaderMessage): Promise<ReaderResponse> {
@@ -110,6 +114,7 @@ deactivateBtn.addEventListener('click', async () => {
     if (deactivateResponse.ok) {
       setStatus('Reader deactivated', 'success');
       updateUI(false);
+      summaryContentEl.style.display = 'none';
     } else {
       setStatus(`Failed: ${deactivateResponse.reason ?? 'unknown'}`, 'error');
     }
@@ -131,6 +136,67 @@ fontIncBtn.addEventListener('click', async () => {
 
 themeToggleBtn.addEventListener('click', async () => {
   setStatus('Use in-reader controls', 'info');
+});
+
+summarizeBtn.addEventListener('click', async () => {
+  try {
+    setStatus('Generating summary...', 'info');
+    summaryContentEl.style.display = 'block';
+    summaryContentEl.textContent = 'Loading...';
+    summaryContentEl.className = 'summary-content loading';
+
+    // Step 1: Get article text from content script (independent of reader mode)
+    let text: string;
+    try {
+      const textResponse = await sendMessage({ type: 'getArticleText' });
+      if (!textResponse.ok || !textResponse.articleText) {
+        throw new Error(textResponse.reason ?? 'Could not extract article text');
+      }
+      text = textResponse.articleText;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      summaryContentEl.textContent = `Failed to get article text: ${errorMessage}`;
+      summaryContentEl.className = 'summary-content';
+      setStatus('Failed to extract text', 'error');
+      return;
+    }
+
+    // Step 2: Send to background worker for summarization (graceful degradation)
+    const summarizeMessage: SummarizeMessage = {
+      type: 'summarize',
+      text,
+    };
+
+    const response = (await chrome.runtime.sendMessage(summarizeMessage)) as SummarizeResponse;
+
+    if (response.ok && response.summary) {
+      summaryContentEl.textContent = response.summary;
+      summaryContentEl.className = 'summary-content';
+      setStatus('Summary generated', 'success');
+    } else {
+      // Graceful error handling - show helpful message
+      const errorMsg = response.error ?? 'Unknown error';
+      const isNotConfigured = response.errorCode === 'no_api_key';
+      
+      summaryContentEl.textContent = isNotConfigured
+        ? 'AI summarization is not configured. Please add an API key in extension settings.'
+        : `Error: ${errorMsg}`;
+      summaryContentEl.className = 'summary-content';
+      setStatus(isNotConfigured ? 'AI not configured' : 'Summary failed', 'error');
+    }
+  } catch (error) {
+    // Graceful error handling - don't break the app
+    summaryContentEl.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    summaryContentEl.className = 'summary-content';
+    setStatus('Summary failed', 'error');
+    console.error('Summarize error:', error);
+  }
+});
+
+// Settings link
+settingsLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.runtime.openOptionsPage();
 });
 
 // Initialize on load
