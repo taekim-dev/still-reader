@@ -6,7 +6,7 @@
   "permissions": ["scripting", "activeTab"],
   "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "service-worker.js"
+    "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html",
