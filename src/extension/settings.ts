@@ -7,6 +7,7 @@ import { AIConfig, getAIConfig, saveAIConfig, clearAIConfig } from './storage';
 // UI elements
 const form = document.getElementById('settings-form') as HTMLFormElement;
 const statusEl = document.getElementById('status') as HTMLElement;
+const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
 const providerSelect = document.getElementById('provider') as HTMLSelectElement;
 const customApiGroup = document.getElementById('custom-api-group') as HTMLElement;
@@ -53,10 +54,8 @@ function showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'
   }, 5000);
 }
 
-// Save settings
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
+// Save settings - use button click instead of form submit to avoid URL params
+saveBtn.addEventListener('click', async () => {
   try {
     const formData = new FormData(form);
     const apiKey = (formData.get('apiKey') as string)?.trim();
