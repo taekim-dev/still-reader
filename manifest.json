@@ -1,13 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Still Reader (dev)",
-  "version": "0.1.0",
-  "description": "Distraction-free reader mode with optional AI summary.",
+  "version": "0.1.1",
+  "description": "Distraction-free reader mode for article-style web pages.",
   "permissions": ["scripting", "activeTab"],
   "host_permissions": ["<all_urls>"],
-  "background": {
-    "service_worker": "background.js"
-  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "Still Reader"

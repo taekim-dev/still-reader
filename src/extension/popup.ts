@@ -5,12 +5,6 @@
 
 import { ReaderMessage, ReaderResponse } from './messages';
 
-interface SummarizeResponse {
-  ok: boolean;
-  summary?: string;
-  error?: string;
-}
-
 // UI elements
 const statusEl = document.getElementById('status') as HTMLElement;
 const activateBtn = document.getElementById('activate') as HTMLButtonElement;
@@ -18,8 +12,6 @@ const deactivateBtn = document.getElementById('deactivate') as HTMLButtonElement
 const fontDecBtn = document.getElementById('font-dec') as HTMLButtonElement;
 const fontIncBtn = document.getElementById('font-inc') as HTMLButtonElement;
 const themeToggleBtn = document.getElementById('theme-toggle') as HTMLButtonElement;
-const summarizeBtn = document.getElementById('summarize') as HTMLButtonElement;
-const summaryContentEl = document.getElementById('summary-content') as HTMLElement;
 
 let currentTabId: number | null = null;
 
@@ -60,7 +52,6 @@ function updateUI(active: boolean): void {
   fontDecBtn.disabled = !active;
   fontIncBtn.disabled = !active;
   themeToggleBtn.disabled = !active;
-  summarizeBtn.disabled = !active;
 }
 
 async function sendMessage(message: ReaderMessage): Promise<ReaderResponse> {
@@ -119,7 +110,6 @@ deactivateBtn.addEventListener('click', async () => {
     if (deactivateResponse.ok) {
       setStatus('Reader deactivated', 'success');
       updateUI(false);
-      summaryContentEl.style.display = 'none';
     } else {
       setStatus(`Failed: ${deactivateResponse.reason ?? 'unknown'}`, 'error');
     }
@@ -141,41 +131,6 @@ fontIncBtn.addEventListener('click', async () => {
 
 themeToggleBtn.addEventListener('click', async () => {
   setStatus('Use in-reader controls', 'info');
-});
-
-summarizeBtn.addEventListener('click', async () => {
-  try {
-    setStatus('Generating summary...', 'info');
-    summaryContentEl.style.display = 'block';
-    summaryContentEl.textContent = 'Loading...';
-    summaryContentEl.className = 'summary-content loading';
-
-    // Get article text from content script
-    // For now, we'll need to add a message type to get the text
-    // This is a placeholder - in production, we'd get the extracted text
-    const text = 'Article text will be retrieved from content script';
-
-    // Send to background worker for summarization
-    const response = (await chrome.runtime.sendMessage({
-      type: 'summarize',
-      text,
-    })) as SummarizeResponse;
-
-    if (response.ok && response.summary) {
-      summaryContentEl.textContent = response.summary;
-      summaryContentEl.className = 'summary-content';
-      setStatus('Summary generated', 'success');
-    } else {
-      summaryContentEl.textContent = `Error: ${response.error ?? 'Unknown error'}`;
-      summaryContentEl.className = 'summary-content';
-      setStatus('Summary failed', 'error');
-    }
-  } catch (error) {
-    summaryContentEl.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    summaryContentEl.className = 'summary-content';
-    setStatus('Summary failed', 'error');
-    console.error('Summarize error:', error);
-  }
 });
 
 // Initialize on load

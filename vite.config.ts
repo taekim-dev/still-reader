@@ -2,9 +2,11 @@ import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 import { copyFileSync, mkdirSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import type { Plugin } from 'vite';
+
 
 // Plugin to copy manifest and popup HTML
-function copyExtensionFiles() {
+function copyExtensionFiles(): Plugin {
   return {
     name: 'copy-extension-files',
     writeBundle() {
@@ -47,13 +49,13 @@ export default defineConfig({
     rollupOptions: {
       input: {
         content: resolve(__dirname, 'src/extension/content.ts'),
-        background: resolve(__dirname, 'src/extension/background.ts'),
         popup: resolve(__dirname, 'src/extension/popup.ts'),
       },
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: '[name]-[hash].js',
         assetFileNames: '[name].[ext]',
+        inlineDynamicImports: false,
       },
     },
   },

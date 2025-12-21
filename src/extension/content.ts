@@ -6,7 +6,7 @@
 import { handleReaderMessage } from './contentHandler';
 import { ReaderMessage, ReaderResponse } from './messages';
 
-// Listen for messages from popup/background
+// Listen for messages from popup
 chrome.runtime.onMessage.addListener(
   (message: ReaderMessage, _sender, sendResponse: (response: ReaderResponse) => void) => {
     const response = handleReaderMessage(document, message);
