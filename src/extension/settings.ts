@@ -37,9 +37,9 @@ function getElements(): void {
   }
 
   // Show/hide custom API URL field based on provider
-  providerSelect.addEventListener('change', () => {
+  providerSelect?.addEventListener('change', () => {
     if (customApiGroup) {
-      customApiGroup.style.display = providerSelect!.value === 'custom' ? 'block' : 'none';
+      customApiGroup.style.display = providerSelect?.value === 'custom' ? 'block' : 'none';
     }
   });
 }
@@ -62,7 +62,7 @@ async function initSettings(): Promise<void> {
       if (providerSelect) providerSelect.value = config.provider || 'groq';
 
       // Show custom API group if needed
-      if (providerSelect.value === 'custom') {
+      if (providerSelect && providerSelect.value === 'custom' && customApiGroup) {
         customApiGroup.style.display = 'block';
       }
     }
@@ -157,8 +157,12 @@ function setupClearHandler(): void {
 
   try {
     await clearAIConfig();
-    form.reset();
-    customApiGroup.style.display = 'none';
+    if (form) {
+      form.reset();
+    }
+    if (customApiGroup) {
+      customApiGroup.style.display = 'none';
+    }
     showStatus('Settings cleared', 'success');
   } catch (error) {
     showStatus('Failed to clear settings', 'error');

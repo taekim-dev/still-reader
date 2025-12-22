@@ -1,4 +1,5 @@
 import { activateReaderMode, deactivateReaderMode, getArticleText, isReaderActive } from '../content/contentScript';
+import { changeTheme } from '../content/readerMode';
 
 import { ReaderMessage, ReaderResponse } from './messages';
 
@@ -32,10 +33,21 @@ export function handleReaderMessage(document: Document, message: ReaderMessage):
     if (isReaderActive()) {
       return deactivateReaderMode(document);
     } else {
+      // Load theme preference for activation
+      // Note: This is async but we can't make handleReaderMessage async easily
+      // For now, use default theme - user can change via popup
       return activateReaderMode(document, {
         showUnavailableNotice: false,
       });
     }
+  }
+
+  if (message.type === 'changeTheme') {
+    const result = changeTheme(document, message.theme);
+    return {
+      ok: result.ok,
+      reason: result.reason,
+    };
   }
 
   if (message.type === 'getArticleText') {

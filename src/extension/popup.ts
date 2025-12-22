@@ -4,6 +4,7 @@
  */
 
 import { ReaderMessage, ReaderResponse, SummarizeMessage, SummarizeResponse } from './messages';
+import { getThemePreference, saveThemePreference } from './storage';
 
 // UI elements
 const statusEl = document.getElementById('status') as HTMLElement;
@@ -17,10 +18,15 @@ const summaryContentEl = document.getElementById('summary-content') as HTMLEleme
 const settingsLink = document.getElementById('settings-link') as HTMLAnchorElement;
 
 let currentTabId: number | null = null;
+let currentTheme: 'light' | 'dark' = 'light';
 
 // Initialize: get current tab and check reader status
 async function init(): Promise<void> {
   try {
+    // Load saved theme preference
+    currentTheme = await getThemePreference();
+    updateThemeButtonLabel();
+
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab.id) {
       setStatus('No active tab', 'error');
@@ -42,6 +48,10 @@ async function init(): Promise<void> {
     setStatus('Failed to initialize', 'error');
     console.error('Init error:', error);
   }
+}
+
+function updateThemeButtonLabel(): void {
+  themeToggleBtn.textContent = currentTheme === 'dark' ? '🌙 Dark' : '☀️ Light';
 }
 
 function setStatus(message: string, type: 'info' | 'success' | 'error' = 'info'): void {
@@ -88,7 +98,12 @@ async function sendMessage(message: ReaderMessage): Promise<ReaderResponse> {
 activateBtn.addEventListener('click', async () => {
   try {
     setStatus('Activating...', 'info');
-    const activateResponse = await sendMessage({ type: 'activate' });
+    // Load theme preference before activating
+    const theme = await getThemePreference();
+    const activateResponse = await sendMessage({ 
+      type: 'activate',
+      options: { theme }
+    });
     if (activateResponse.ok) {
       setStatus('Reader activated', 'success');
       updateUI(true);
@@ -135,7 +150,28 @@ fontIncBtn.addEventListener('click', async () => {
 });
 
 themeToggleBtn.addEventListener('click', async () => {
-  setStatus('Use in-reader controls', 'info');
+  try {
+    // Toggle theme
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    // Save preference
+    await saveThemePreference(currentTheme);
+    updateThemeButtonLabel();
+    
+    // If reader is active, update theme immediately
+    try {
+      const response = await sendMessage({ type: 'changeTheme', theme: currentTheme });
+      if (response.ok) {
+        setStatus(`Theme: ${currentTheme === 'dark' ? 'Dark' : 'Light'}`, 'success');
+      }
+    } catch {
+      // Reader not active, that's okay - preference is saved for next activation
+      setStatus(`Theme set to ${currentTheme === 'dark' ? 'Dark' : 'Light'}`, 'success');
+    }
+  } catch (error) {
+    setStatus('Failed to change theme', 'error');
+    console.error('Theme toggle error:', error);
+  }
 });
 
 summarizeBtn.addEventListener('click', async () => {

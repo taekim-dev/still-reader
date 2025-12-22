@@ -158,13 +158,20 @@ function fixBackgroundWorker(): Plugin {
       code = code.replace(/export\s+[^;{}]*\s*;?/g, '');
       code = code.replace(/export\s+(default\s+)?(function|const|let|var|class|async\s+function)\s+/g, '');
 
-      // Fix function reference: m() and u() should be t() (getAIConfig is minified as t)
-      // The storage functions are: t=getAIConfig, c=saveAIConfig, n=clearAIConfig
-      // If m() or u() is called, it's likely the minified name for getAIConfig which should be t
-      code = code.replace(/\bawait\s+m\(\)/g, 'await t()');
-      code = code.replace(/\bm\(\)/g, 't()');
-      code = code.replace(/\bawait\s+u\(\)/g, 'await t()');
-      code = code.replace(/\bu\(\)/g, 't()');
+      // Fix function references for getAIConfig
+      // After adding theme storage, minifier renamed variables:
+      // - t = storage key constant ("still-reader-ai-config")
+      // - c = getAIConfig function
+      // - n = saveAIConfig function
+      // - a = clearAIConfig function
+      // The handleSummarize function (P) calls t() but should call c()
+      code = code.replace(/\bawait\s+t\(\)/g, 'await c()');
+      code = code.replace(/\bt\(\)/g, 'c()');
+      // Also fix old patterns (m, u) that might still appear
+      code = code.replace(/\bawait\s+m\(\)/g, 'await c()');
+      code = code.replace(/\bm\(\)/g, 'c()');
+      code = code.replace(/\bawait\s+u\(\)/g, 'await c()');
+      code = code.replace(/\bu\(\)/g, 'c()');
 
       writeFileSync(backgroundPath, code, 'utf-8');
     },

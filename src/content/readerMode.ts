@@ -77,6 +77,19 @@ export function isReaderActive(): boolean {
   return active;
 }
 
+/**
+ * Change theme while reader is active.
+ */
+export function changeTheme(document: Document, theme: 'light' | 'dark'): { ok: boolean; reason?: string } {
+  if (!active || !state) {
+    return { ok: false, reason: 'not_active' };
+  }
+
+  state.theme = theme;
+  applyState(document, state);
+  return { ok: true };
+}
+
 function buildReaderShell(content: ReaderContent): string {
   const theme = content.theme ?? DEFAULT_THEME.theme;
   const fontScale = content.fontScale ?? DEFAULT_THEME.fontScale;
@@ -159,7 +172,6 @@ function buildReaderShell(content: ReaderContent): string {
     <div id="still-reader-controls">
       <button id="sr-font-dec" aria-label="Decrease font size">A-</button>
       <button id="sr-font-inc" aria-label="Increase font size">A+</button>
-      <button id="sr-theme-toggle" aria-label="Toggle theme">${theme === 'dark' ? 'Light' : 'Dark'}</button>
       <button id="sr-exit" aria-label="Exit reader">Exit</button>
     </div>
     ${title}
@@ -225,14 +237,7 @@ function clampFontScale(value: number): number {
 function wireControls(document: Document): void {
   const inc = document.getElementById('sr-font-inc');
   const dec = document.getElementById('sr-font-dec');
-  const theme = document.getElementById('sr-theme-toggle');
   const exit = document.getElementById('sr-exit');
-
-  const updateThemeLabel = () => {
-    if (theme) {
-      theme.textContent = state?.theme === 'dark' ? 'Light' : 'Dark';
-    }
-  };
 
   const handleFontIncrease = () => {
     if (!state) return;
@@ -246,20 +251,12 @@ function wireControls(document: Document): void {
     applyState(document, state);
   };
 
-  const handleThemeToggle = () => {
-    if (!state) return;
-    state.theme = state.theme === 'dark' ? 'light' : 'dark';
-    applyState(document, state);
-    updateThemeLabel();
-  };
-
   const handleExit = () => {
     deactivateReader(document);
   };
 
   inc?.addEventListener('click', handleFontIncrease);
   dec?.addEventListener('click', handleFontDecrease);
-  theme?.addEventListener('click', handleThemeToggle);
   exit?.addEventListener('click', handleExit);
 
   // Add keyboard shortcuts when reader is active
@@ -273,13 +270,6 @@ function wireControls(document: Document): void {
     if (e.key === 'Escape') {
       e.preventDefault();
       handleExit();
-      return;
-    }
-
-    // T: Toggle theme
-    if (e.key === 't' || e.key === 'T') {
-      e.preventDefault();
-      handleThemeToggle();
       return;
     }
 
