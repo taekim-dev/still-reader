@@ -1,7 +1,7 @@
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 
-import { activateReader, deactivateReader, isReaderActive } from '../src/content/readerMode';
+import { activateReader, deactivateReader, isReaderActive, changeTheme } from '../src/content/readerMode';
 
 const basePage = `
   <html>
@@ -61,7 +61,7 @@ describe('readerMode', () => {
     deactivateReader(document);
   });
 
-  it('updates font scale and theme via in-reader controls', () => {
+  it('updates font scale via in-reader controls', () => {
     const dom = new JSDOM(
       `
         <html><head><title>Test</title></head>
@@ -75,16 +75,12 @@ describe('readerMode', () => {
 
     const inc = document.getElementById('sr-font-inc');
     const dec = document.getElementById('sr-font-dec');
-    const toggle = document.getElementById('sr-theme-toggle');
 
     inc?.dispatchEvent(new dom.window.Event('click'));
     expect(document.documentElement.style.getPropertyValue('--sr-font-scale')).toBe('1.1');
 
     dec?.dispatchEvent(new dom.window.Event('click'));
     expect(document.documentElement.style.getPropertyValue('--sr-font-scale')).toBe('1');
-
-    toggle?.dispatchEvent(new dom.window.Event('click'));
-    expect(document.body.getAttribute('data-theme')).toBe('dark');
 
     deactivateReader(document);
   });
@@ -139,8 +135,8 @@ describe('readerMode', () => {
       expect(controls).not.toBeNull();
       expect((controls as HTMLElement).style.background).toBe('var(--sr-bg-light)');
 
-      const toggle = document.getElementById('sr-theme-toggle');
-      toggle?.dispatchEvent(new dom.window.Event('click'));
+      // Change theme using the function (simulating popup control)
+      changeTheme(document, 'dark');
 
       expect((controls as HTMLElement).style.background).toBe('var(--sr-bg-dark)');
 
@@ -167,11 +163,10 @@ describe('readerMode', () => {
         expect(bgColor === '#fff' || bgColor === 'rgb(255, 255, 255)').toBe(true);
       });
 
-      // Toggle to dark
-      const toggle = document.getElementById('sr-theme-toggle');
-      toggle?.dispatchEvent(new dom.window.Event('click'));
+      // Change to dark theme using the function
+      changeTheme(document, 'dark');
 
-      // Re-query buttons after toggle (they might be recreated)
+      // Re-query buttons after theme change
       const buttonsAfter = document.querySelectorAll('#still-reader-controls button');
       
       // Check dark theme button styles
@@ -188,24 +183,24 @@ describe('readerMode', () => {
       deactivateReader(document);
     });
 
-    it('updates theme toggle button label correctly', () => {
+    it('changes theme correctly via changeTheme function', () => {
       const dom = new JSDOM(basePage, { url: 'https://example.com' });
       const { document } = dom.window;
 
       activateReader(document, { html: '<p>Content</p>', theme: 'light' });
 
-      // Wait a tick for DOM to be ready
-      const toggle = document.getElementById('sr-theme-toggle');
-      expect(toggle).not.toBeNull();
-      if (!toggle) return;
-      
-      expect(toggle.textContent).toBe('Dark'); // Light theme, so button says "Dark"
+      // Start with light theme
+      expect(document.body.getAttribute('data-theme')).toBe('light');
 
-      toggle.dispatchEvent(new dom.window.Event('click'));
-      expect(toggle.textContent).toBe('Light'); // Dark theme, so button says "Light"
+      // Change to dark
+      changeTheme(document, 'dark');
+      expect(document.body.getAttribute('data-theme')).toBe('dark');
+      expect(document.body.style.background).toBe('var(--sr-bg-dark)');
 
-      toggle.dispatchEvent(new dom.window.Event('click'));
-      expect(toggle.textContent).toBe('Dark'); // Back to light
+      // Change back to light
+      changeTheme(document, 'light');
+      expect(document.body.getAttribute('data-theme')).toBe('light');
+      expect(document.body.style.background).toBe('var(--sr-bg-light)');
 
       deactivateReader(document);
     });
@@ -217,28 +212,18 @@ describe('readerMode', () => {
       activateReader(document, { html: '<p>Content</p>', theme: 'light' });
 
       // Start with light - check that theme is applied
-      // Note: body should have data-theme from template, and applyState should update styles
       const body = document.body;
       expect(body).not.toBeNull();
-      const initialTheme = body.getAttribute('data-theme');
-      // Theme should be set (either from template or applyState)
-      expect(initialTheme === 'light' || initialTheme === null).toBe(true);
+      expect(body.getAttribute('data-theme')).toBe('light');
 
-      const toggle = document.getElementById('sr-theme-toggle');
-      if (!toggle) {
-        // If toggle not found, skip toggle tests but verify initial state
-        deactivateReader(document);
-        return;
-      }
-
-      // Toggle to dark
-      toggle.dispatchEvent(new dom.window.Event('click'));
+      // Change to dark using changeTheme function
+      changeTheme(document, 'dark');
       expect(body.getAttribute('data-theme')).toBe('dark');
       expect(body.style.background).toBe('var(--sr-bg-dark)');
       expect(body.style.color).toBe('var(--sr-fg-dark)');
 
-      // Toggle back to light
-      toggle.dispatchEvent(new dom.window.Event('click'));
+      // Change back to light
+      changeTheme(document, 'light');
       expect(body.getAttribute('data-theme')).toBe('light');
       expect(body.style.background).toBe('var(--sr-bg-light)');
       expect(body.style.color).toBe('var(--sr-fg-light)');
@@ -246,7 +231,7 @@ describe('readerMode', () => {
       deactivateReader(document);
     });
 
-    it('preserves theme state during multiple toggles', () => {
+    it('preserves theme state during multiple changes', () => {
       const dom = new JSDOM(basePage, { url: 'https://example.com' });
       const { document } = dom.window;
 
@@ -255,22 +240,15 @@ describe('readerMode', () => {
       // Verify initial dark theme
       expect(document.body.getAttribute('data-theme')).toBe('dark');
 
-      // Query for toggle button - it should exist after activation and wireControls
-      const toggle = document.getElementById('sr-theme-toggle');
-      if (!toggle) {
-        // Skip this test if toggle button not found (JSDOM quirk)
-        deactivateReader(document);
-        return;
+      // Change theme multiple times
+      const themes: Array<'light' | 'dark'> = ['light', 'dark', 'light', 'dark', 'light'];
+      for (const theme of themes) {
+        changeTheme(document, theme);
+        expect(document.body.getAttribute('data-theme')).toBe(theme);
       }
 
-      // Toggle multiple times
-      for (let i = 0; i < 5; i++) {
-        toggle.dispatchEvent(new dom.window.Event('click'));
-      }
-
-      // After 5 toggles from dark: dark -> light -> dark -> light -> dark -> light
+      // After 5 changes from dark: dark -> light -> dark -> light -> dark -> light
       expect(document.body.getAttribute('data-theme')).toBe('light');
-      expect(toggle.textContent).toBe('Dark');
 
       deactivateReader(document);
     });
