@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
 import { getAIConfig, saveAIConfig, clearAIConfig, AIConfig } from '../src/extension/storage';
 
 // Mock chrome.storage.sync
