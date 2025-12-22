@@ -194,6 +194,26 @@ function applyState(document: Document, next: ReaderState): void {
   document.documentElement.style.setProperty('--sr-font-scale', next.fontScale.toString());
   const theme = next.theme;
   document.body.setAttribute('data-theme', theme);
+  
+  // Update background and text colors dynamically
+  const bgColor = theme === 'dark' ? 'var(--sr-bg-dark)' : 'var(--sr-bg-light)';
+  const fgColor = theme === 'dark' ? 'var(--sr-fg-dark)' : 'var(--sr-fg-light)';
+  document.body.style.background = bgColor;
+  document.body.style.color = fgColor;
+  
+  // Update controls background
+  const controls = document.getElementById('still-reader-controls');
+  if (controls) {
+    (controls as HTMLElement).style.background = bgColor;
+  }
+  
+  // Update button styles
+  const buttons = document.querySelectorAll('#still-reader-controls button');
+  buttons.forEach((btn) => {
+    const button = btn as HTMLElement;
+    button.style.borderColor = theme === 'dark' ? '#333' : '#ccc';
+    button.style.background = theme === 'dark' ? '#1c1c1c' : '#fff';
+  });
 }
 
 function clampFontScale(value: number): number {
@@ -214,27 +234,68 @@ function wireControls(document: Document): void {
     }
   };
 
-  inc?.addEventListener('click', () => {
+  const handleFontIncrease = () => {
     if (!state) return;
     state.fontScale = clampFontScale(state.fontScale + 0.1);
     applyState(document, state);
-  });
+  };
 
-  dec?.addEventListener('click', () => {
+  const handleFontDecrease = () => {
     if (!state) return;
     state.fontScale = clampFontScale(state.fontScale - 0.1);
     applyState(document, state);
-  });
+  };
 
-  theme?.addEventListener('click', () => {
+  const handleThemeToggle = () => {
     if (!state) return;
     state.theme = state.theme === 'dark' ? 'light' : 'dark';
     applyState(document, state);
     updateThemeLabel();
-  });
+  };
 
-  exit?.addEventListener('click', () => {
+  const handleExit = () => {
     deactivateReader(document);
+  };
+
+  inc?.addEventListener('click', handleFontIncrease);
+  dec?.addEventListener('click', handleFontDecrease);
+  theme?.addEventListener('click', handleThemeToggle);
+  exit?.addEventListener('click', handleExit);
+
+  // Add keyboard shortcuts when reader is active
+  document.addEventListener('keydown', (e) => {
+    // Don't trigger shortcuts when typing in inputs
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    // Escape: Exit reader
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      handleExit();
+      return;
+    }
+
+    // T: Toggle theme
+    if (e.key === 't' || e.key === 'T') {
+      e.preventDefault();
+      handleThemeToggle();
+      return;
+    }
+
+    // + or =: Increase font
+    if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      handleFontIncrease();
+      return;
+    }
+
+    // -: Decrease font
+    if (e.key === '-') {
+      e.preventDefault();
+      handleFontDecrease();
+      return;
+    }
   });
 }
 

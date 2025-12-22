@@ -158,11 +158,13 @@ function fixBackgroundWorker(): Plugin {
       code = code.replace(/export\s+[^;{}]*\s*;?/g, '');
       code = code.replace(/export\s+(default\s+)?(function|const|let|var|class|async\s+function)\s+/g, '');
 
-      // Fix function reference: m() should be t() (getAIConfig is minified as t)
+      // Fix function reference: m() and u() should be t() (getAIConfig is minified as t)
       // The storage functions are: t=getAIConfig, c=saveAIConfig, n=clearAIConfig
-      // If m() is called, it's likely the minified name for getAIConfig which should be t
+      // If m() or u() is called, it's likely the minified name for getAIConfig which should be t
       code = code.replace(/\bawait\s+m\(\)/g, 'await t()');
       code = code.replace(/\bm\(\)/g, 't()');
+      code = code.replace(/\bawait\s+u\(\)/g, 'await t()');
+      code = code.replace(/\bu\(\)/g, 't()');
 
       writeFileSync(backgroundPath, code, 'utf-8');
     },

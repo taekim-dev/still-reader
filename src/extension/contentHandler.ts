@@ -1,4 +1,4 @@
-import { activateReaderMode, deactivateReaderMode, getArticleText } from '../content/contentScript';
+import { activateReaderMode, deactivateReaderMode, getArticleText, isReaderActive } from '../content/contentScript';
 
 import { ReaderMessage, ReaderResponse } from './messages';
 
@@ -25,6 +25,17 @@ export function handleReaderMessage(document: Document, message: ReaderMessage):
 
   if (message.type === 'deactivate') {
     return deactivateReaderMode(document);
+  }
+
+  if (message.type === 'toggle-reader') {
+    // Check if reader is active and toggle
+    if (isReaderActive()) {
+      return deactivateReaderMode(document);
+    } else {
+      return activateReaderMode(document, {
+        showUnavailableNotice: false,
+      });
+    }
   }
 
   if (message.type === 'getArticleText') {

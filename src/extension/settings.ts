@@ -20,14 +20,16 @@ function getElements(): void {
   providerSelect = document.getElementById('provider') as HTMLSelectElement;
   customApiGroup = document.getElementById('custom-api-group') as HTMLElement;
 
-  console.log('Elements found:', {
-    form: !!form,
-    statusEl: !!statusEl,
-    saveBtn: !!saveBtn,
-    clearBtn: !!clearBtn,
-    providerSelect: !!providerSelect,
-    customApiGroup: !!customApiGroup,
-  });
+  // Debug: log elements found (disabled for production)
+  // Uncomment for debugging:
+  // console.log('Elements found:', {
+  //   form: !!form,
+  //   statusEl: !!statusEl,
+  //   saveBtn: !!saveBtn,
+  //   clearBtn: !!clearBtn,
+  //   providerSelect: !!providerSelect,
+  //   customApiGroup: !!customApiGroup,
+  // });
 
   if (!form || !statusEl || !saveBtn || !clearBtn || !providerSelect || !customApiGroup) {
     console.error('Some elements are missing!');
@@ -92,9 +94,7 @@ function setupSaveHandler(): void {
     return;
   }
 
-  console.log('Setting up save button handler');
   saveBtn.addEventListener('click', async () => {
-    console.log('Save button clicked!');
     try {
       if (!form) {
         console.error('Form is null');
@@ -168,7 +168,7 @@ function setupClearHandler(): void {
 }
 
 // Initialize on load
-console.log('Settings script loaded, DOM ready state:', document.readyState);
+// Settings script loaded
 
 function initialize(): void {
   getElements();
@@ -181,16 +181,16 @@ function initialize(): void {
   setupSaveHandler();
   setupClearHandler();
   initSettings();
-  console.log('Settings page initialized successfully');
+  // Settings page initialized successfully
 }
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded fired');
+    // DOMContentLoaded fired
     initialize();
   });
 } else {
-  console.log('DOM already ready, initializing');
+  // DOM already ready, initializing
   initialize();
 }
 

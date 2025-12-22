@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Still Reader (dev)",
-  "version": "0.1.1",
+  "name": "Still Reader",
+  "version": "1.0.0",
   "description": "Distraction-free reader mode with optional AI summary.",
   "permissions": ["scripting", "activeTab", "storage"],
   "host_permissions": ["<all_urls>"],
@@ -24,6 +24,15 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "commands": {
+    "toggle-reader": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+R",
+        "mac": "Command+Shift+R"
+      },
+      "description": "Toggle reader mode"
+    }
   }
 }
 
