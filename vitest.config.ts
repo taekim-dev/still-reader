@@ -5,7 +5,16 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     coverage: {
-      enabled: false,
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        'tests/',
+        '**/*.test.ts',
+        '**/*.config.*',
+        'scripts/',
+      ],
     },
   },
 });
