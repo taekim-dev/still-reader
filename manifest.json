@@ -32,6 +32,13 @@
         "mac": "Command+Shift+R"
       },
       "description": "Toggle reader mode"
+    },
+    "activate-reader": {
+      "suggested_key": {
+        "default": "Alt+R",
+        "mac": "Option+R"
+      },
+      "description": "Activate reader mode"
     }
   }
 }

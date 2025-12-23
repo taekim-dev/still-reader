@@ -9,15 +9,35 @@
 import { summarizeText } from '../ai/summarizer';
 
 import { SummarizeMessage, SummarizeResponse } from './messages';
-import { getAIConfig } from './storage';
+import { getAIConfig, getThemePreference } from './storage';
 
 // Listen for keyboard shortcuts
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'toggle-reader') {
     // Get the active tab and send a message to toggle reader mode
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]?.id) {
         chrome.tabs.sendMessage(tabs[0].id, { type: 'toggle-reader' });
+      }
+    });
+  } else if (command === 'activate-reader') {
+    // Quick activate-only shortcut - loads theme preference and activates
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      if (tabs[0]?.id) {
+        try {
+          // Load theme preference
+          const theme = await getThemePreference();
+          // Send activate message with theme
+          chrome.tabs.sendMessage(tabs[0].id, { 
+            type: 'activate',
+            options: { theme }
+          });
+        } catch (error) {
+          // If theme loading fails, activate with default theme
+          chrome.tabs.sendMessage(tabs[0].id, { 
+            type: 'activate'
+          });
+        }
       }
     });
   }

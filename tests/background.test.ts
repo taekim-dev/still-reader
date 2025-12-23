@@ -6,8 +6,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { getAIConfig, saveAIConfig, AIConfig } from '../src/extension/storage';
 import { summarizeText } from '../src/ai/summarizer';
+import { getAIConfig, saveAIConfig, AIConfig, getThemePreference } from '../src/extension/storage';
 
 // Mock chrome.storage.sync
 const mockStorage: Record<string, any> = {};
@@ -163,6 +163,29 @@ describe('Background worker integration', () => {
 
       expect(config).not.toBeNull();
       expect(config?.apiKey).toBe('test-key');
+    });
+  });
+
+  describe('activate-reader command', () => {
+    it('should load theme preference for activation', async () => {
+      // Set theme preference
+      mockStorage['still-reader-theme'] = 'dark';
+
+      const theme = await getThemePreference();
+      expect(theme).toBe('dark');
+
+      // This simulates what the activate-reader command does
+      // It loads theme and sends activate message with theme
+      const themePreference = await getThemePreference();
+
+      // Verify theme is loaded correctly
+      expect(themePreference).toBe('dark');
+    });
+
+    it('should default to light theme if no preference is set', async () => {
+      // No theme preference set
+      const theme = await getThemePreference();
+      expect(theme).toBe('light');
     });
   });
 });

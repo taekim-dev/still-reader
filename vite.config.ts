@@ -158,16 +158,41 @@ function fixBackgroundWorker(): Plugin {
       code = code.replace(/export\s+[^;{}]*\s*;?/g, '');
       code = code.replace(/export\s+(default\s+)?(function|const|let|var|class|async\s+function)\s+/g, '');
 
-      // Fix function references for getAIConfig
+      // Fix function references for getAIConfig and getThemePreference
       // After adding theme storage, minifier renamed variables:
       // - t = storage key constant ("still-reader-ai-config")
       // - c = getAIConfig function
       // - n = saveAIConfig function
       // - a = clearAIConfig function
-      // The handleSummarize function (P) calls t() but should call c()
+      // - o = storage key constant ("still-reader-theme")
+      // - s = getThemePreference function
+      // - i = saveThemePreference function
+      // The handleSummarize function calls l() but should call c() (getAIConfig)
+      code = code.replace(/\bawait\s+l\(\)/g, 'await c()');
+      code = code.replace(/\bl\(\)/g, 'c()');
+      // Fix activate-reader handler: it incorrectly calls c() (getAIConfig) when it should call s() (getThemePreference)
+      // Pattern: in activate-reader context, "const r=await c()" followed by "theme:r" should be "const r=await s()"
+      // The minified code is: activate-reader"&&...try{const r=await c();chrome.tabs.sendMessage(...,{type:"activate",options:{theme:r}})
+      // Direct string replacement: find the pattern and replace it
+      const activateIdx = code.indexOf('activate-reader');
+      if (activateIdx !== -1) {
+        // Find the next occurrence of "theme:r" after activate-reader
+        const themeIdx = code.indexOf('theme:r', activateIdx);
+        if (themeIdx !== -1) {
+          // Get the section between activate-reader and theme:r
+          const section = code.substring(activateIdx, themeIdx);
+          if (section.includes('try{const r=await c()')) {
+            // Replace c() with s() in this section
+            const fixedSection = section.replace(/try\{const\s+r\s*=\s*await\s+c\(\)/, 'try{const r=await s()');
+            // Reconstruct the code
+            code = code.substring(0, activateIdx) + fixedSection + code.substring(themeIdx);
+            console.log('[fixBackgroundWorker] Fixed activate-reader: c() -> s()');
+          }
+        }
+      }
+      // Also fix other patterns that might appear
       code = code.replace(/\bawait\s+t\(\)/g, 'await c()');
       code = code.replace(/\bt\(\)/g, 'c()');
-      // Also fix old patterns (m, u) that might still appear
       code = code.replace(/\bawait\s+m\(\)/g, 'await c()');
       code = code.replace(/\bm\(\)/g, 'c()');
       code = code.replace(/\bawait\s+u\(\)/g, 'await c()');
