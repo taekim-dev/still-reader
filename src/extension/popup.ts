@@ -36,9 +36,13 @@ async function init(): Promise<void> {
 
     // Ping content script to check if reader is active
     try {
-      await sendMessage({ type: 'ping' });
-      // If ping succeeds, reader might be active (we'll update UI based on response)
-      updateUI(false); // Start with inactive state, will update after checking
+      const pingResponse = await sendMessage({ type: 'ping' });
+      // Update UI based on reader status
+      const isActive = pingResponse.active ?? false;
+      updateUI(isActive);
+      if (isActive) {
+        setStatus('Reader mode active', 'success');
+      }
     } catch {
       // Content script not ready or page not supported
       setStatus('Page not ready', 'error');
@@ -108,7 +112,13 @@ activateBtn.addEventListener('click', async () => {
       setStatus('Reader activated', 'success');
       updateUI(true);
     } else {
-      setStatus(`Failed: ${activateResponse.reason ?? 'unknown'}`, 'error');
+      // If already active, update UI to reflect correct state
+      if (activateResponse.reason === 'already_active') {
+        updateUI(true);
+        setStatus('Reader already active', 'info');
+      } else {
+        setStatus(`Failed: ${activateResponse.reason ?? 'unknown'}`, 'error');
+      }
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

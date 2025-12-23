@@ -12,6 +12,7 @@ export interface ReaderResponse {
   confidence?: number;
   textLength?: number;
   articleText?: string; // For getArticleText response
+  active?: boolean; // Whether reader mode is currently active
 }
 
 // AI-specific messages (independent of core reader functionality)

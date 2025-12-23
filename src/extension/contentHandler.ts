@@ -12,7 +12,7 @@ import { ReaderMessage, ReaderResponse } from './messages';
  */
 export function handleReaderMessage(document: Document, message: ReaderMessage): ReaderResponse {
   if (message.type === 'ping') {
-    return { ok: true };
+    return { ok: true, active: isReaderActive() };
   }
 
   if (message.type === 'activate') {

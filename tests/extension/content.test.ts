@@ -89,6 +89,34 @@ describe('Content script Chrome messaging', () => {
     const response = handleReaderMessage(doc, message);
 
     expect(response.ok).toBe(true);
+    expect(response.active).toBe(false); // Should return active status
+  });
+
+  it('should return active: true in ping when reader is active', () => {
+    const doc = document.implementation.createHTMLDocument();
+    // Use realistic article content that will pass extraction threshold
+    doc.body.innerHTML = `
+      <header><h1>Site</h1></header>
+      <article>
+        <h1>Article Title</h1>
+        <p>This is the first paragraph of the article with substantial content.</p>
+        <p>This is the second paragraph that adds more detail and context.</p>
+        <p>This is the third paragraph that continues the narrative.</p>
+        <p>This is the fourth paragraph with additional information.</p>
+        <p>This is the fifth paragraph that provides more depth.</p>
+      </article>
+      <footer>Contact</footer>
+    `;
+
+    // First activate
+    handleReaderMessage(doc, { type: 'activate' });
+
+    // Then ping should return active: true
+    const message: ReaderMessage = { type: 'ping' };
+    const response = handleReaderMessage(doc, message);
+
+    expect(response.ok).toBe(true);
+    expect(response.active).toBe(true);
   });
 });
 
