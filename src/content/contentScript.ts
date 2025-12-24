@@ -1,5 +1,6 @@
 import { extractArticle } from '../extraction/extractor';
 
+import { ELEMENT_IDS, NOTICE_STYLES } from './constants';
 import { activateReader, deactivateReader, isReaderActive, ReaderContent } from './readerMode';
 
 export interface ActivationOptions {
@@ -53,22 +54,22 @@ export function deactivateReaderMode(document: Document): ActivationResult {
 }
 
 function injectNotice(document: Document, message: string): void {
-  const existing = document.getElementById('still-reader-unavailable');
+  const existing = document.getElementById(ELEMENT_IDS.UNAVAILABLE);
   if (existing) return;
 
   const container = document.createElement('div');
-  container.id = 'still-reader-unavailable';
-  container.style.position = 'fixed';
-  container.style.bottom = '16px';
-  container.style.right = '16px';
-  container.style.padding = '12px 16px';
-  container.style.background = '#111';
-  container.style.color = '#f5f5f5';
-  container.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  container.style.fontSize = '14px';
-  container.style.borderRadius = '8px';
-  container.style.boxShadow = '0 6px 24px rgba(0,0,0,0.2)';
-  container.style.zIndex = '2147483647';
+  container.id = ELEMENT_IDS.UNAVAILABLE;
+  container.style.position = NOTICE_STYLES.position;
+  container.style.bottom = `${NOTICE_STYLES.bottom}px`;
+  container.style.right = `${NOTICE_STYLES.right}px`;
+  container.style.padding = `${NOTICE_STYLES.padding.vertical}px ${NOTICE_STYLES.padding.horizontal}px`;
+  container.style.background = NOTICE_STYLES.background;
+  container.style.color = NOTICE_STYLES.color;
+  container.style.fontFamily = NOTICE_STYLES.fontFamily;
+  container.style.fontSize = `${NOTICE_STYLES.fontSize}px`;
+  container.style.borderRadius = `${NOTICE_STYLES.borderRadius}px`;
+  container.style.boxShadow = NOTICE_STYLES.boxShadow;
+  container.style.zIndex = NOTICE_STYLES.zIndex.toString();
   container.textContent = message;
 
   document.body.appendChild(container);

@@ -1,3 +1,14 @@
+import {
+  BUTTON_STYLES,
+  COLORS,
+  CSS_VARIABLES,
+  DEFAULT_TITLE,
+  DIMENSIONS,
+  ELEMENT_IDS,
+  FONT_SCALE,
+  TYPOGRAPHY,
+} from './constants';
+
 export interface ReaderContent {
   html: string;
   title?: string;
@@ -13,7 +24,7 @@ interface Snapshot {
 
 const DEFAULT_THEME: Required<Pick<ReaderContent, 'theme' | 'fontScale'>> = {
   theme: 'light',
-  fontScale: 1,
+  fontScale: FONT_SCALE.DEFAULT,
 };
 
 interface ReaderState {
@@ -93,86 +104,87 @@ export function changeTheme(document: Document, theme: 'light' | 'dark'): { ok: 
 function buildReaderShell(content: ReaderContent): string {
   const theme = content.theme ?? DEFAULT_THEME.theme;
   const fontScale = content.fontScale ?? DEFAULT_THEME.fontScale;
-  const title = content.title ? `<h1 class="sr-title">${content.title}</h1>` : '';
+  const title = content.title ? `<h1 class="sr-title">${escapeHtml(content.title)}</h1>` : '';
+  const themeColors = COLORS[theme];
 
   return `
 <head>
   <meta charset="UTF-8" />
-  <title>${escapeHtml(content.title ?? 'Reader')}</title>
+  <title>${escapeHtml(content.title ?? DEFAULT_TITLE)}</title>
   <style>
     :root {
-      --sr-font-scale: ${fontScale};
-      --sr-bg-light: #f8f8f8;
-      --sr-fg-light: #1a1a1a;
-      --sr-bg-dark: #111;
-      --sr-fg-dark: #f5f5f5;
-      --sr-content-width: 720px;
-      --sr-line-height: 1.6;
-      --sr-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      ${CSS_VARIABLES.FONT_SCALE}: ${fontScale};
+      ${CSS_VARIABLES.BG_LIGHT}: ${COLORS.light.background};
+      ${CSS_VARIABLES.FG_LIGHT}: ${COLORS.light.foreground};
+      ${CSS_VARIABLES.BG_DARK}: ${COLORS.dark.background};
+      ${CSS_VARIABLES.FG_DARK}: ${COLORS.dark.foreground};
+      ${CSS_VARIABLES.CONTENT_WIDTH}: ${DIMENSIONS.contentWidth};
+      ${CSS_VARIABLES.LINE_HEIGHT}: ${TYPOGRAPHY.lineHeight};
+      ${CSS_VARIABLES.FONT_FAMILY}: ${TYPOGRAPHY.fontFamily};
     }
     body {
       margin: 0;
       padding: 0;
-      background: ${theme === 'dark' ? 'var(--sr-bg-dark)' : 'var(--sr-bg-light)'};
-      color: ${theme === 'dark' ? 'var(--sr-fg-dark)' : 'var(--sr-fg-light)'};
-      font-family: var(--sr-font-family);
-      line-height: var(--sr-line-height);
-      font-size: calc(16px * var(--sr-font-scale));
+      background: ${theme === 'dark' ? `var(${CSS_VARIABLES.BG_DARK})` : `var(${CSS_VARIABLES.BG_LIGHT})`};
+      color: ${theme === 'dark' ? `var(${CSS_VARIABLES.FG_DARK})` : `var(${CSS_VARIABLES.FG_LIGHT})`};
+      font-family: var(${CSS_VARIABLES.FONT_FAMILY});
+      line-height: var(${CSS_VARIABLES.LINE_HEIGHT});
+      font-size: calc(${TYPOGRAPHY.baseFontSize}px * var(${CSS_VARIABLES.FONT_SCALE}));
       display: flex;
       justify-content: center;
     }
-    #still-reader-root {
-      max-width: var(--sr-content-width);
+    #${ELEMENT_IDS.ROOT} {
+      max-width: var(${CSS_VARIABLES.CONTENT_WIDTH});
       width: 100%;
-      padding: 32px 20px 64px;
+      padding: ${DIMENSIONS.padding.top}px ${DIMENSIONS.padding.sides}px ${DIMENSIONS.padding.bottom}px;
       box-sizing: border-box;
     }
     .sr-title {
       margin-top: 0;
-      margin-bottom: 24px;
-      font-size: 1.8em;
-      line-height: 1.2;
+      margin-bottom: ${DIMENSIONS.title.marginBottom}px;
+      font-size: ${TYPOGRAPHY.title.fontSize};
+      line-height: ${TYPOGRAPHY.title.lineHeight};
     }
-    #still-reader-root p {
+    #${ELEMENT_IDS.ROOT} p {
       margin: 0 0 1em 0;
     }
-    #still-reader-root img, #still-reader-root video {
+    #${ELEMENT_IDS.ROOT} img, #${ELEMENT_IDS.ROOT} video {
       max-width: 100%;
       height: auto;
     }
-    #still-reader-root a {
+    #${ELEMENT_IDS.ROOT} a {
       color: inherit;
       text-decoration: underline;
     }
-    #still-reader-controls {
+    #${ELEMENT_IDS.CONTROLS} {
       position: sticky;
       top: 0;
       display: flex;
-      gap: 8px;
+      gap: ${DIMENSIONS.controls.gap}px;
       align-items: center;
-      padding: 12px 0 16px 0;
-      background: ${theme === 'dark' ? 'var(--sr-bg-dark)' : 'var(--sr-bg-light)'};
+      padding: ${DIMENSIONS.controls.padding.top}px 0 ${DIMENSIONS.controls.padding.bottom}px 0;
+      background: ${theme === 'dark' ? `var(${CSS_VARIABLES.BG_DARK})` : `var(${CSS_VARIABLES.BG_LIGHT})`};
     }
-    #still-reader-controls button {
-      padding: 6px 10px;
-      border: 1px solid ${theme === 'dark' ? '#333' : '#ccc'};
-      background: ${theme === 'dark' ? '#1c1c1c' : '#fff'};
+    #${ELEMENT_IDS.CONTROLS} button {
+      padding: ${BUTTON_STYLES.padding.vertical}px ${BUTTON_STYLES.padding.horizontal}px;
+      border: 1px solid ${themeColors.border};
+      background: ${themeColors.button};
       color: inherit;
-      border-radius: 6px;
+      border-radius: ${BUTTON_STYLES.borderRadius}px;
       cursor: pointer;
       font: inherit;
     }
-    #still-reader-controls button:hover {
-      border-color: ${theme === 'dark' ? '#555' : '#999'};
+    #${ELEMENT_IDS.CONTROLS} button:hover {
+      border-color: ${themeColors.buttonHover};
     }
   </style>
 </head>
 <body data-theme="${theme}">
-  <div id="still-reader-root">
-    <div id="still-reader-controls">
-      <button id="sr-font-dec" aria-label="Decrease font size">A-</button>
-      <button id="sr-font-inc" aria-label="Increase font size">A+</button>
-      <button id="sr-exit" aria-label="Exit reader">Exit</button>
+  <div id="${ELEMENT_IDS.ROOT}">
+    <div id="${ELEMENT_IDS.CONTROLS}">
+      <button id="${ELEMENT_IDS.FONT_DEC}" aria-label="Decrease font size">A-</button>
+      <button id="${ELEMENT_IDS.FONT_INC}" aria-label="Increase font size">A+</button>
+      <button id="${ELEMENT_IDS.EXIT}" aria-label="Exit reader">Exit</button>
     </div>
     ${title}
     <article class="sr-article">
@@ -203,51 +215,50 @@ function escapeHtml(input: string): string {
 }
 
 function applyState(document: Document, next: ReaderState): void {
-  document.documentElement.style.setProperty('--sr-font-scale', next.fontScale.toString());
+  document.documentElement.style.setProperty(CSS_VARIABLES.FONT_SCALE, next.fontScale.toString());
   const theme = next.theme;
   document.body.setAttribute('data-theme', theme);
   
   // Update background and text colors dynamically
-  const bgColor = theme === 'dark' ? 'var(--sr-bg-dark)' : 'var(--sr-bg-light)';
-  const fgColor = theme === 'dark' ? 'var(--sr-fg-dark)' : 'var(--sr-fg-light)';
+  const themeColors = COLORS[theme];
+  const bgColor = theme === 'dark' ? `var(${CSS_VARIABLES.BG_DARK})` : `var(${CSS_VARIABLES.BG_LIGHT})`;
+  const fgColor = theme === 'dark' ? `var(${CSS_VARIABLES.FG_DARK})` : `var(${CSS_VARIABLES.FG_LIGHT})`;
   document.body.style.background = bgColor;
   document.body.style.color = fgColor;
   
   // Update controls background
-  const controls = document.getElementById('still-reader-controls');
+  const controls = document.getElementById(ELEMENT_IDS.CONTROLS);
   if (controls) {
     (controls as HTMLElement).style.background = bgColor;
   }
   
   // Update button styles
-  const buttons = document.querySelectorAll('#still-reader-controls button');
+  const buttons = document.querySelectorAll(`#${ELEMENT_IDS.CONTROLS} button`);
   buttons.forEach((btn) => {
     const button = btn as HTMLElement;
-    button.style.borderColor = theme === 'dark' ? '#333' : '#ccc';
-    button.style.background = theme === 'dark' ? '#1c1c1c' : '#fff';
+    button.style.borderColor = themeColors.border;
+    button.style.background = themeColors.button;
   });
 }
 
 function clampFontScale(value: number): number {
-  const min = 0.8;
-  const max = 1.6;
-  return Math.min(max, Math.max(min, Number(value.toFixed(2))));
+  return Math.min(FONT_SCALE.MAX, Math.max(FONT_SCALE.MIN, Number(value.toFixed(2))));
 }
 
 function wireControls(document: Document): void {
-  const inc = document.getElementById('sr-font-inc');
-  const dec = document.getElementById('sr-font-dec');
-  const exit = document.getElementById('sr-exit');
+  const inc = document.getElementById(ELEMENT_IDS.FONT_INC);
+  const dec = document.getElementById(ELEMENT_IDS.FONT_DEC);
+  const exit = document.getElementById(ELEMENT_IDS.EXIT);
 
   const handleFontIncrease = () => {
     if (!state) return;
-    state.fontScale = clampFontScale(state.fontScale + 0.1);
+    state.fontScale = clampFontScale(state.fontScale + FONT_SCALE.INCREMENT);
     applyState(document, state);
   };
 
   const handleFontDecrease = () => {
     if (!state) return;
-    state.fontScale = clampFontScale(state.fontScale - 0.1);
+    state.fontScale = clampFontScale(state.fontScale - FONT_SCALE.INCREMENT);
     applyState(document, state);
   };
 
