@@ -3,6 +3,7 @@
  * the content script via Chrome messaging.
  */
 
+import { ERROR_CODES, USER_MESSAGES, formatErrorMessage, getUserFriendlyMessage } from './errorMessages';
 import { ReaderMessage, ReaderResponse, SummarizeMessage, SummarizeResponse } from './messages';
 import { getThemePreference, saveThemePreference } from './storage';
 
@@ -101,7 +102,7 @@ async function sendMessage(message: ReaderMessage): Promise<ReaderResponse> {
 // Event handlers
 activateBtn.addEventListener('click', async () => {
   try {
-    setStatus('Activating...', 'info');
+    setStatus(USER_MESSAGES.ACTIVATING, 'info');
     // Load theme preference before activating
     const theme = await getThemePreference();
     const activateResponse = await sendMessage({ 
@@ -109,15 +110,17 @@ activateBtn.addEventListener('click', async () => {
       options: { theme }
     });
     if (activateResponse.ok) {
-      setStatus('Reader activated', 'success');
+      setStatus(USER_MESSAGES.READER_ACTIVATED, 'success');
       updateUI(true);
     } else {
       // If already active, update UI to reflect correct state
-      if (activateResponse.reason === 'already_active') {
+      if (activateResponse.reason === ERROR_CODES.ALREADY_ACTIVE) {
         updateUI(true);
-        setStatus('Reader already active', 'info');
+        setStatus(USER_MESSAGES.READER_ALREADY_ACTIVE, 'info');
       } else {
-        setStatus(`Failed: ${activateResponse.reason ?? 'unknown'}`, 'error');
+        // Log technical reason for debugging
+        console.warn('Activation failed:', activateResponse.reason);
+        setStatus(formatErrorMessage(activateResponse.reason), 'error');
       }
     }
   } catch (error) {
@@ -134,14 +137,16 @@ activateBtn.addEventListener('click', async () => {
 
 deactivateBtn.addEventListener('click', async () => {
   try {
-    setStatus('Deactivating...', 'info');
+    setStatus(USER_MESSAGES.DEACTIVATING, 'info');
     const deactivateResponse = await sendMessage({ type: 'deactivate' });
     if (deactivateResponse.ok) {
-      setStatus('Reader deactivated', 'success');
+      setStatus(USER_MESSAGES.READER_DEACTIVATED, 'success');
       updateUI(false);
       summaryContentEl.style.display = 'none';
     } else {
-      setStatus(`Failed: ${deactivateResponse.reason ?? 'unknown'}`, 'error');
+      // Log technical reason for debugging
+      console.warn('Deactivation failed:', deactivateResponse.reason);
+      setStatus(formatErrorMessage(deactivateResponse.reason), 'error');
     }
   } catch (error) {
     setStatus('Failed to deactivate', 'error');
@@ -152,11 +157,11 @@ deactivateBtn.addEventListener('click', async () => {
 fontDecBtn.addEventListener('click', async () => {
   // Font size is controlled in-reader, but we can send a message to adjust
   // For now, this is handled by in-reader controls
-  setStatus('Use in-reader controls', 'info');
+  setStatus(USER_MESSAGES.USE_IN_READER_CONTROLS, 'info');
 });
 
 fontIncBtn.addEventListener('click', async () => {
-  setStatus('Use in-reader controls', 'info');
+  setStatus(USER_MESSAGES.USE_IN_READER_CONTROLS, 'info');
 });
 
 themeToggleBtn.addEventListener('click', async () => {
@@ -196,14 +201,17 @@ summarizeBtn.addEventListener('click', async () => {
     try {
       const textResponse = await sendMessage({ type: 'getArticleText' });
       if (!textResponse.ok || !textResponse.articleText) {
-        throw new Error(textResponse.reason ?? 'Could not extract article text');
+        // Log technical reason for debugging
+        console.warn('Failed to get article text:', textResponse.reason);
+        const userMessage = getUserFriendlyMessage(textResponse.reason);
+        throw new Error(userMessage);
       }
       text = textResponse.articleText;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      summaryContentEl.textContent = `Failed to get article text: ${errorMessage}`;
+      const errorMessage = error instanceof Error ? error.message : getUserFriendlyMessage(ERROR_CODES.UNKNOWN);
+      summaryContentEl.textContent = `${USER_MESSAGES.FAILED_TO_GET_ARTICLE_TEXT}: ${errorMessage}`;
       summaryContentEl.className = 'summary-content';
-      setStatus('Failed to extract text', 'error');
+      setStatus(USER_MESSAGES.FAILED_TO_GET_ARTICLE_TEXT, 'error');
       return;
     }
 
