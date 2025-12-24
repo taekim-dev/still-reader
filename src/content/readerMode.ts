@@ -101,17 +101,14 @@ export function changeTheme(document: Document, theme: 'light' | 'dark'): { ok: 
   return { ok: true };
 }
 
-function buildReaderShell(content: ReaderContent): string {
-  const theme = content.theme ?? DEFAULT_THEME.theme;
-  const fontScale = content.fontScale ?? DEFAULT_THEME.fontScale;
-  const title = content.title ? `<h1 class="sr-title">${escapeHtml(content.title)}</h1>` : '';
+/**
+ * Generate CSS styles for reader mode.
+ * @internal - Exported for testing
+ */
+export function generateStyles(theme: 'light' | 'dark', fontScale: number): string {
   const themeColors = COLORS[theme];
-
+  
   return `
-<head>
-  <meta charset="UTF-8" />
-  <title>${escapeHtml(content.title ?? DEFAULT_TITLE)}</title>
-  <style>
     :root {
       ${CSS_VARIABLES.FONT_SCALE}: ${fontScale};
       ${CSS_VARIABLES.BG_LIGHT}: ${COLORS.light.background};
@@ -177,8 +174,33 @@ function buildReaderShell(content: ReaderContent): string {
     #${ELEMENT_IDS.CONTROLS} button:hover {
       border-color: ${themeColors.buttonHover};
     }
-  </style>
-</head>
+  `;
+}
+
+/**
+ * Generate the <head> section of the reader shell.
+ * @internal - Exported for testing
+ */
+export function generateHead(title: string | undefined, theme: 'light' | 'dark', fontScale: number): string {
+  const escapedTitle = escapeHtml(title ?? DEFAULT_TITLE);
+  const styles = generateStyles(theme, fontScale);
+  
+  return `
+<head>
+  <meta charset="UTF-8" />
+  <title>${escapedTitle}</title>
+  <style>${styles}</style>
+</head>`;
+}
+
+/**
+ * Generate the <body> section of the reader shell.
+ * @internal - Exported for testing
+ */
+export function generateBody(title: string | undefined, html: string, theme: 'light' | 'dark'): string {
+  const titleElement = title ? `<h1 class="sr-title">${escapeHtml(title)}</h1>` : '';
+  
+  return `
 <body data-theme="${theme}">
   <div id="${ELEMENT_IDS.ROOT}">
     <div id="${ELEMENT_IDS.CONTROLS}">
@@ -186,13 +208,25 @@ function buildReaderShell(content: ReaderContent): string {
       <button id="${ELEMENT_IDS.FONT_INC}" aria-label="Increase font size">A+</button>
       <button id="${ELEMENT_IDS.EXIT}" aria-label="Exit reader">Exit</button>
     </div>
-    ${title}
+    ${titleElement}
     <article class="sr-article">
-      ${content.html}
+      ${html}
     </article>
   </div>
-</body>
-`;
+</body>`;
+}
+
+/**
+ * Build the complete reader shell HTML.
+ */
+function buildReaderShell(content: ReaderContent): string {
+  const theme = content.theme ?? DEFAULT_THEME.theme;
+  const fontScale = content.fontScale ?? DEFAULT_THEME.fontScale;
+  
+  const head = generateHead(content.title, theme, fontScale);
+  const body = generateBody(content.title, content.html, theme);
+  
+  return `${head}${body}`;
 }
 
 function escapeHtml(input: string): string {
