@@ -39,30 +39,24 @@ interface ReaderState {
 }
 
 /**
- * Factory function to create reader mode instance with isolated state.
- * Each instance has its own state (active, snapshot, state), allowing
- * for isolated testing and multiple instances if needed.
- * 
- * @param initialState - Optional initial state for testing
- * @returns Reader mode API with state-dependent functions
+ * Creates a reader mode instance with isolated state.
  * @internal - Exported for testing
  */
 export function createReaderMode(initialState?: {
-  active?: boolean;
-  snapshot?: Snapshot | null;
-  state?: ReaderState | null;
+  isActive?: boolean;
+  originalPage?: Snapshot | null;
+  config?: ReaderState | null;
 }) {
-  // State is encapsulated in closure - private to this instance
-  let active = initialState?.active ?? false;
-  let snapshot: Snapshot | null = initialState?.snapshot ?? null;
-  let state: ReaderState | null = initialState?.state ?? null;
+  let isActive = initialState?.isActive ?? false;
+  let originalPage: Snapshot | null = initialState?.originalPage ?? null;
+  let config: ReaderState | null = initialState?.config ?? null;
 
   function activateReader(document: Document, content: ReaderContent): { ok: boolean; reason?: string } {
-    if (active) {
+    if (isActive) {
       return { ok: false, reason: 'already_active' };
     }
 
-    snapshot = {
+    originalPage = {
       html: document.documentElement.innerHTML,
       scrollX: document.defaultView?.scrollX ?? 0,
       scrollY: document.defaultView?.scrollY ?? 0,
@@ -70,52 +64,52 @@ export function createReaderMode(initialState?: {
 
     const html = buildReaderShell(content);
     document.documentElement.innerHTML = html;
-    state = {
+    config = {
       theme: content.theme ?? DEFAULT_THEME.theme,
       fontScale: content.fontScale ?? DEFAULT_THEME.fontScale,
     };
-    applyState(document, state);
+    applyState(document, config);
     setupControls(document);
 
-    active = true;
+    isActive = true;
     return { ok: true };
   }
 
   function deactivateReader(document: Document): { ok: boolean; reason?: string } {
-    if (!active || !snapshot) {
+    if (!isActive || !originalPage) {
       return { ok: true, reason: 'not_active' };
     }
 
-    document.documentElement.innerHTML = snapshot.html;
+    document.documentElement.innerHTML = originalPage.html;
     try {
       const scrollToFn = document.defaultView?.scrollTo;
       const isJsdom = !!document.defaultView?.navigator?.userAgent?.includes('jsdom');
       const isStub = scrollToFn && /Not implemented/i.test(String(scrollToFn));
       const allowCustom = (scrollToFn as unknown as { __ALLOW_SCROLL__?: boolean })?.__ALLOW_SCROLL__ === true;
       if (scrollToFn && (allowCustom || (!isStub && !isJsdom))) {
-        scrollToFn.call(document.defaultView, snapshot.scrollX, snapshot.scrollY);
+        scrollToFn.call(document.defaultView, originalPage.scrollX, originalPage.scrollY);
       }
     } catch {
       // ignore scroll restore errors
     }
 
-    active = false;
-    snapshot = null;
-    state = null;
+    isActive = false;
+    originalPage = null;
+    config = null;
     return { ok: true };
   }
 
   function isReaderActive(): boolean {
-    return active;
+    return isActive;
   }
 
   function changeTheme(document: Document, theme: 'light' | 'dark'): { ok: boolean; reason?: string } {
-    if (!active || !state) {
+    if (!isActive || !config) {
       return { ok: false, reason: 'not_active' };
     }
 
-    state.theme = theme;
-    applyState(document, state);
+    config.theme = theme;
+    applyState(document, config);
     return { ok: true };
   }
 
@@ -125,15 +119,15 @@ export function createReaderMode(initialState?: {
     const exit = document.getElementById(ELEMENT_IDS.EXIT);
 
     const handleFontIncrease = () => {
-      if (!state) return;
-      state.fontScale = clampFontScale(state.fontScale + FONT_SCALE.INCREMENT);
-      applyState(document, state);
+      if (!config) return;
+      config.fontScale = clampFontScale(config.fontScale + FONT_SCALE.INCREMENT);
+      applyState(document, config);
     };
 
     const handleFontDecrease = () => {
-      if (!state) return;
-      state.fontScale = clampFontScale(state.fontScale - FONT_SCALE.INCREMENT);
-      applyState(document, state);
+      if (!config) return;
+      config.fontScale = clampFontScale(config.fontScale - FONT_SCALE.INCREMENT);
+      applyState(document, config);
     };
 
     const handleExit = () => {
