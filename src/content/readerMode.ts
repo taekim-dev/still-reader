@@ -38,74 +38,158 @@ interface ReaderState {
   fontScale: number;
 }
 
-let active = false;
-let snapshot: Snapshot | null = null;
-let state: ReaderState | null = null;
-
-export function activateReader(document: Document, content: ReaderContent): { ok: boolean; reason?: string } {
-  if (active) {
-    return { ok: false, reason: 'already_active' };
-  }
-
-  snapshot = {
-    html: document.documentElement.innerHTML,
-    scrollX: document.defaultView?.scrollX ?? 0,
-    scrollY: document.defaultView?.scrollY ?? 0,
-  };
-
-  const html = buildReaderShell(content);
-  document.documentElement.innerHTML = html;
-  state = {
-    theme: content.theme ?? DEFAULT_THEME.theme,
-    fontScale: content.fontScale ?? DEFAULT_THEME.fontScale,
-  };
-  applyState(document, state);
-  wireControls(document);
-
-  active = true;
-  return { ok: true };
-}
-
-export function deactivateReader(document: Document): { ok: boolean; reason?: string } {
-  if (!active || !snapshot) {
-    return { ok: true, reason: 'not_active' };
-  }
-
-  document.documentElement.innerHTML = snapshot.html;
-  try {
-    const scrollToFn = document.defaultView?.scrollTo;
-    const isJsdom = !!document.defaultView?.navigator?.userAgent?.includes('jsdom');
-    const isStub = scrollToFn && /Not implemented/i.test(String(scrollToFn));
-    const allowCustom = (scrollToFn as unknown as { __ALLOW_SCROLL__?: boolean })?.__ALLOW_SCROLL__ === true;
-    if (scrollToFn && (allowCustom || (!isStub && !isJsdom))) {
-      scrollToFn.call(document.defaultView, snapshot.scrollX, snapshot.scrollY);
-    }
-  } catch {
-    // ignore scroll restore errors
-  }
-
-  active = false;
-  snapshot = null;
-  state = null;
-  return { ok: true };
-}
-
-export function isReaderActive(): boolean {
-  return active;
-}
-
 /**
- * Change theme while reader is active.
+ * Factory function to create reader mode instance with isolated state.
+ * Each instance has its own state (active, snapshot, state), allowing
+ * for isolated testing and multiple instances if needed.
+ * 
+ * @param initialState - Optional initial state for testing
+ * @returns Reader mode API with state-dependent functions
+ * @internal - Exported for testing
  */
-export function changeTheme(document: Document, theme: 'light' | 'dark'): { ok: boolean; reason?: string } {
-  if (!active || !state) {
-    return { ok: false, reason: 'not_active' };
+export function createReaderMode(initialState?: {
+  active?: boolean;
+  snapshot?: Snapshot | null;
+  state?: ReaderState | null;
+}) {
+  // State is encapsulated in closure - private to this instance
+  let active = initialState?.active ?? false;
+  let snapshot: Snapshot | null = initialState?.snapshot ?? null;
+  let state: ReaderState | null = initialState?.state ?? null;
+
+  function activateReader(document: Document, content: ReaderContent): { ok: boolean; reason?: string } {
+    if (active) {
+      return { ok: false, reason: 'already_active' };
+    }
+
+    snapshot = {
+      html: document.documentElement.innerHTML,
+      scrollX: document.defaultView?.scrollX ?? 0,
+      scrollY: document.defaultView?.scrollY ?? 0,
+    };
+
+    const html = buildReaderShell(content);
+    document.documentElement.innerHTML = html;
+    state = {
+      theme: content.theme ?? DEFAULT_THEME.theme,
+      fontScale: content.fontScale ?? DEFAULT_THEME.fontScale,
+    };
+    applyState(document, state);
+    setupControls(document);
+
+    active = true;
+    return { ok: true };
   }
 
-  state.theme = theme;
-  applyState(document, state);
-  return { ok: true };
+  function deactivateReader(document: Document): { ok: boolean; reason?: string } {
+    if (!active || !snapshot) {
+      return { ok: true, reason: 'not_active' };
+    }
+
+    document.documentElement.innerHTML = snapshot.html;
+    try {
+      const scrollToFn = document.defaultView?.scrollTo;
+      const isJsdom = !!document.defaultView?.navigator?.userAgent?.includes('jsdom');
+      const isStub = scrollToFn && /Not implemented/i.test(String(scrollToFn));
+      const allowCustom = (scrollToFn as unknown as { __ALLOW_SCROLL__?: boolean })?.__ALLOW_SCROLL__ === true;
+      if (scrollToFn && (allowCustom || (!isStub && !isJsdom))) {
+        scrollToFn.call(document.defaultView, snapshot.scrollX, snapshot.scrollY);
+      }
+    } catch {
+      // ignore scroll restore errors
+    }
+
+    active = false;
+    snapshot = null;
+    state = null;
+    return { ok: true };
+  }
+
+  function isReaderActive(): boolean {
+    return active;
+  }
+
+  function changeTheme(document: Document, theme: 'light' | 'dark'): { ok: boolean; reason?: string } {
+    if (!active || !state) {
+      return { ok: false, reason: 'not_active' };
+    }
+
+    state.theme = theme;
+    applyState(document, state);
+    return { ok: true };
+  }
+
+  function setupControls(document: Document): void {
+    const inc = document.getElementById(ELEMENT_IDS.FONT_INC);
+    const dec = document.getElementById(ELEMENT_IDS.FONT_DEC);
+    const exit = document.getElementById(ELEMENT_IDS.EXIT);
+
+    const handleFontIncrease = () => {
+      if (!state) return;
+      state.fontScale = clampFontScale(state.fontScale + FONT_SCALE.INCREMENT);
+      applyState(document, state);
+    };
+
+    const handleFontDecrease = () => {
+      if (!state) return;
+      state.fontScale = clampFontScale(state.fontScale - FONT_SCALE.INCREMENT);
+      applyState(document, state);
+    };
+
+    const handleExit = () => {
+      deactivateReader(document);
+    };
+
+    inc?.addEventListener('click', handleFontIncrease);
+    dec?.addEventListener('click', handleFontDecrease);
+    exit?.addEventListener('click', handleExit);
+
+    // Add keyboard shortcuts when reader is active
+    document.addEventListener('keydown', (e) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Escape: Exit reader
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleExit();
+        return;
+      }
+
+      // + or =: Increase font
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        handleFontIncrease();
+        return;
+      }
+
+      // -: Decrease font
+      if (e.key === '-') {
+        e.preventDefault();
+        handleFontDecrease();
+        return;
+      }
+    });
+  }
+
+  return {
+    activateReader,
+    deactivateReader,
+    isReaderActive,
+    changeTheme,
+  };
 }
+
+// Create module-level instance for backward compatibility
+const readerMode = createReaderMode();
+
+// Export functions from module-level instance
+export const activateReader = readerMode.activateReader;
+export const deactivateReader = readerMode.deactivateReader;
+export const isReaderActive = readerMode.isReaderActive;
+export const changeTheme = readerMode.changeTheme;
 
 /**
  * Generate CSS styles for reader mode.
@@ -319,58 +403,4 @@ function clampFontScale(value: number): number {
   return Math.min(FONT_SCALE.MAX, Math.max(FONT_SCALE.MIN, Number(value.toFixed(2))));
 }
 
-function wireControls(document: Document): void {
-  const inc = document.getElementById(ELEMENT_IDS.FONT_INC);
-  const dec = document.getElementById(ELEMENT_IDS.FONT_DEC);
-  const exit = document.getElementById(ELEMENT_IDS.EXIT);
-
-  const handleFontIncrease = () => {
-    if (!state) return;
-    state.fontScale = clampFontScale(state.fontScale + FONT_SCALE.INCREMENT);
-    applyState(document, state);
-  };
-
-  const handleFontDecrease = () => {
-    if (!state) return;
-    state.fontScale = clampFontScale(state.fontScale - FONT_SCALE.INCREMENT);
-    applyState(document, state);
-  };
-
-  const handleExit = () => {
-    deactivateReader(document);
-  };
-
-  inc?.addEventListener('click', handleFontIncrease);
-  dec?.addEventListener('click', handleFontDecrease);
-  exit?.addEventListener('click', handleExit);
-
-  // Add keyboard shortcuts when reader is active
-  document.addEventListener('keydown', (e) => {
-    // Don't trigger shortcuts when typing in inputs
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-      return;
-    }
-
-    // Escape: Exit reader
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      handleExit();
-      return;
-    }
-
-    // + or =: Increase font
-    if (e.key === '+' || e.key === '=') {
-      e.preventDefault();
-      handleFontIncrease();
-      return;
-    }
-
-    // -: Decrease font
-    if (e.key === '-') {
-      e.preventDefault();
-      handleFontDecrease();
-      return;
-    }
-  });
-}
 
