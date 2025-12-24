@@ -8,6 +8,12 @@ import {
   FONT_SCALE,
   TYPOGRAPHY,
 } from './constants';
+import {
+  getBackgroundColorVarRef,
+  getForegroundColorVarRef,
+  getThemeColors,
+  Theme,
+} from './themeUtils';
 
 export interface ReaderContent {
   html: string;
@@ -105,8 +111,10 @@ export function changeTheme(document: Document, theme: 'light' | 'dark'): { ok: 
  * Generate CSS styles for reader mode.
  * @internal - Exported for testing
  */
-export function generateStyles(theme: 'light' | 'dark', fontScale: number): string {
-  const themeColors = COLORS[theme];
+export function generateStyles(theme: Theme, fontScale: number): string {
+  const themeColors = getThemeColors(theme);
+  const bgColorVar = getBackgroundColorVarRef(theme);
+  const fgColorVar = getForegroundColorVarRef(theme);
   
   return `
     :root {
@@ -122,8 +130,8 @@ export function generateStyles(theme: 'light' | 'dark', fontScale: number): stri
     body {
       margin: 0;
       padding: 0;
-      background: ${theme === 'dark' ? `var(${CSS_VARIABLES.BG_DARK})` : `var(${CSS_VARIABLES.BG_LIGHT})`};
-      color: ${theme === 'dark' ? `var(${CSS_VARIABLES.FG_DARK})` : `var(${CSS_VARIABLES.FG_LIGHT})`};
+      background: ${bgColorVar};
+      color: ${fgColorVar};
       font-family: var(${CSS_VARIABLES.FONT_FAMILY});
       line-height: var(${CSS_VARIABLES.LINE_HEIGHT});
       font-size: calc(${TYPOGRAPHY.baseFontSize}px * var(${CSS_VARIABLES.FONT_SCALE}));
@@ -160,7 +168,7 @@ export function generateStyles(theme: 'light' | 'dark', fontScale: number): stri
       gap: ${DIMENSIONS.controls.gap}px;
       align-items: center;
       padding: ${DIMENSIONS.controls.padding.top}px 0 ${DIMENSIONS.controls.padding.bottom}px 0;
-      background: ${theme === 'dark' ? `var(${CSS_VARIABLES.BG_DARK})` : `var(${CSS_VARIABLES.BG_LIGHT})`};
+      background: ${bgColorVar};
     }
     #${ELEMENT_IDS.CONTROLS} button {
       padding: ${BUTTON_STYLES.padding.vertical}px ${BUTTON_STYLES.padding.horizontal}px;
@@ -181,7 +189,7 @@ export function generateStyles(theme: 'light' | 'dark', fontScale: number): stri
  * Generate the <head> section of the reader shell.
  * @internal - Exported for testing
  */
-export function generateHead(title: string | undefined, theme: 'light' | 'dark', fontScale: number): string {
+export function generateHead(title: string | undefined, theme: Theme, fontScale: number): string {
   const escapedTitle = escapeHtml(title ?? DEFAULT_TITLE);
   const styles = generateStyles(theme, fontScale);
   
@@ -197,7 +205,7 @@ export function generateHead(title: string | undefined, theme: 'light' | 'dark',
  * Generate the <body> section of the reader shell.
  * @internal - Exported for testing
  */
-export function generateBody(title: string | undefined, html: string, theme: 'light' | 'dark'): string {
+export function generateBody(title: string | undefined, html: string, theme: Theme): string {
   const titleElement = title ? `<h1 class="sr-title">${escapeHtml(title)}</h1>` : '';
   
   return `
@@ -249,24 +257,28 @@ function escapeHtml(input: string): string {
 }
 
 function applyState(document: Document, next: ReaderState): void {
+  // Step 1: Update font scale
   document.documentElement.style.setProperty(CSS_VARIABLES.FONT_SCALE, next.fontScale.toString());
+  
+  // Step 2: Update theme
   const theme = next.theme;
   document.body.setAttribute('data-theme', theme);
   
-  // Update background and text colors dynamically
-  const themeColors = COLORS[theme];
-  const bgColor = theme === 'dark' ? `var(${CSS_VARIABLES.BG_DARK})` : `var(${CSS_VARIABLES.BG_LIGHT})`;
-  const fgColor = theme === 'dark' ? `var(${CSS_VARIABLES.FG_DARK})` : `var(${CSS_VARIABLES.FG_LIGHT})`;
+  // Step 3: Apply theme colors
+  const themeColors = getThemeColors(theme);
+  const bgColor = getBackgroundColorVarRef(theme);
+  const fgColor = getForegroundColorVarRef(theme);
+  
   document.body.style.background = bgColor;
   document.body.style.color = fgColor;
   
-  // Update controls background
+  // Step 4: Update controls background
   const controls = document.getElementById(ELEMENT_IDS.CONTROLS);
   if (controls) {
     (controls as HTMLElement).style.background = bgColor;
   }
   
-  // Update button styles
+  // Step 5: Update button styles
   const buttons = document.querySelectorAll(`#${ELEMENT_IDS.CONTROLS} button`);
   buttons.forEach((btn) => {
     const button = btn as HTMLElement;
