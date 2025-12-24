@@ -1,6 +1,5 @@
 /**
  * Constants for AI summarization service.
- * Phase 1: Only primitive constants (strings, numbers) to minimize minification conflicts.
  */
 
 export const DEFAULT_PROVIDER = 'groq';

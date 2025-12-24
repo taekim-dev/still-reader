@@ -18,6 +18,7 @@ import {
   DEFAULT_SUMMARY_FALLBACK,
   TRUNCATION_ELLIPSIS,
 } from './constants';
+import { getDefaultModel, truncateText, classifyError } from './utils';
 
 export interface SummarizerConfig {
   apiKey: string;
@@ -67,17 +68,8 @@ export async function summarizeText(
       summary,
     };
   } catch (error) {
-    // Graceful error handling - don't break the app
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    let errorCode: SummarizerResult['errorCode'] = 'unknown';
-
-    if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-      errorCode = 'network_error';
-    } else if (errorMessage.includes('timeout')) {
-      errorCode = 'timeout';
-    } else if (errorMessage.includes('API') || errorMessage.includes('401') || errorMessage.includes('403')) {
-      errorCode = 'api_error';
-    }
+    const errorCode = classifyError(errorMessage);
 
     return {
       ok: false,
@@ -106,7 +98,7 @@ async function callLLMAPI(text: string, config: SummarizerConfig): Promise<strin
   const apiKey = config.apiKey;
 
   // Truncate text to reasonable length (most APIs have token limits)
-  const truncatedText = truncateText(text, MAX_TEXT_LENGTH);
+  const truncatedText = truncateText(text, MAX_TEXT_LENGTH, TRUNCATION_ELLIPSIS);
 
   try {
     switch (provider) {
@@ -132,20 +124,6 @@ async function callLLMAPI(text: string, config: SummarizerConfig): Promise<strin
   }
 }
 
-function getDefaultModel(provider: string): string {
-  const defaults: Record<string, string> = {
-    groq: 'llama-3.1-8b-instant', // Fast and free
-    openai: 'gpt-3.5-turbo',
-    anthropic: 'claude-3-haiku-20240307',
-    gemini: 'gemini-pro',
-  };
-  return defaults[provider] ?? 'gpt-3.5-turbo';
-}
-
-function truncateText(text: string, maxChars: number): string {
-  if (text.length <= maxChars) return text;
-  return text.substring(0, maxChars) + TRUNCATION_ELLIPSIS;
-}
 
 // Groq API (RECOMMENDED: Best free tier - 14,400 requests/day)
 async function callGroqAPI(text: string, apiKey: string, model: string, maxTokens: number): Promise<string> {
