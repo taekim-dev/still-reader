@@ -4,6 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+import { ERROR_CODES, ERROR_PREFIXES, getUserFriendlyMessage } from '../src/ai/errorMessages';
 import { summarizeText, isAIAvailable, SummarizerConfig } from '../src/ai/summarizer';
 
 // Mock global fetch
@@ -20,8 +21,8 @@ describe('summarizeText', () => {
       const result = await summarizeText('Some text to summarize', null);
       
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('not configured');
-      expect(result.errorCode).toBe('no_api_key');
+      expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.NO_API_KEY));
+      expect(result.errorCode).toBe(ERROR_CODES.NO_API_KEY);
     });
 
     it('should return error when config has no API key', async () => {
@@ -33,8 +34,8 @@ describe('summarizeText', () => {
       const result = await summarizeText('Some text to summarize', config);
       
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('not configured');
-      expect(result.errorCode).toBe('no_api_key');
+      expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.NO_API_KEY));
+      expect(result.errorCode).toBe(ERROR_CODES.NO_API_KEY);
     });
 
     it('should return error when text is too short', async () => {
@@ -46,8 +47,8 @@ describe('summarizeText', () => {
       const result = await summarizeText('Short', config);
       
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('too short');
-      expect(result.errorCode).toBe('unknown');
+      expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT));
+      expect(result.errorCode).toBe(ERROR_CODES.UNKNOWN);
     });
 
     it('should return error when text is empty', async () => {
@@ -59,8 +60,8 @@ describe('summarizeText', () => {
       const result = await summarizeText('', config);
       
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('too short');
-      expect(result.errorCode).toBe('unknown');
+      expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT));
+      expect(result.errorCode).toBe(ERROR_CODES.UNKNOWN);
     });
 
     it('should return error when text is only whitespace', async () => {
@@ -72,8 +73,8 @@ describe('summarizeText', () => {
       const result = await summarizeText('   \n\t  ', config);
       
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('too short');
-      expect(result.errorCode).toBe('unknown');
+      expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT));
+      expect(result.errorCode).toBe(ERROR_CODES.UNKNOWN);
     });
 
     it('should return error when text is exactly 49 characters', async () => {
@@ -85,8 +86,8 @@ describe('summarizeText', () => {
       const result = await summarizeText('A'.repeat(49), config);
       
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('too short');
-      expect(result.errorCode).toBe('unknown');
+      expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT));
+      expect(result.errorCode).toBe(ERROR_CODES.UNKNOWN);
     });
 
     it('should accept text that is exactly 50 characters', async () => {
@@ -172,8 +173,8 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Groq API error');
-      expect(result.errorCode).toBe('api_error');
+      expect(result.error).toContain(ERROR_PREFIXES.GROQ_API);
+      expect(result.errorCode).toBe(ERROR_CODES.API_ERROR);
     });
   });
 
@@ -229,8 +230,8 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('OpenAI API error');
-      expect(result.errorCode).toBe('api_error');
+      expect(result.error).toContain(ERROR_PREFIXES.OPENAI_API);
+      expect(result.errorCode).toBe(ERROR_CODES.API_ERROR);
     });
   });
 
@@ -290,8 +291,8 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Anthropic API error');
-      expect(result.errorCode).toBe('api_error');
+      expect(result.error).toContain(ERROR_PREFIXES.ANTHROPIC_API);
+      expect(result.errorCode).toBe(ERROR_CODES.API_ERROR);
     });
   });
 
@@ -349,8 +350,8 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Gemini API error');
-      expect(result.errorCode).toBe('api_error');
+      expect(result.error).toContain(ERROR_PREFIXES.GEMINI_API);
+      expect(result.errorCode).toBe(ERROR_CODES.API_ERROR);
     });
   });
 
@@ -407,9 +408,9 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Custom provider requires an API base URL');
+      expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.CUSTOM_PROVIDER_MISSING_URL));
       // Error is wrapped with "API call failed: " which contains "API", so it's classified as api_error
-      expect(result.errorCode).toBe('api_error');
+      expect(result.errorCode).toBe(ERROR_CODES.API_ERROR);
     });
 
     it('should handle custom API errors gracefully', async () => {
@@ -431,8 +432,8 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Custom API error');
-      expect(result.errorCode).toBe('api_error');
+      expect(result.error).toContain(ERROR_PREFIXES.CUSTOM_API);
+      expect(result.errorCode).toBe(ERROR_CODES.API_ERROR);
     });
   });
 
@@ -451,8 +452,8 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Summarization failed');
-      expect(result.errorCode).toBe('network_error');
+      expect(result.error).toContain(ERROR_PREFIXES.SUMMARIZATION_FAILED);
+      expect(result.errorCode).toBe(ERROR_CODES.NETWORK_ERROR);
     });
 
     it('should handle timeout errors', async () => {
@@ -469,7 +470,7 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.errorCode).toBe('timeout');
+      expect(result.errorCode).toBe(ERROR_CODES.TIMEOUT);
     });
 
     it('should handle API authentication errors (401)', async () => {
@@ -490,7 +491,7 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.errorCode).toBe('api_error');
+      expect(result.errorCode).toBe(ERROR_CODES.API_ERROR);
     });
 
     it('should handle API errors (403)', async () => {
@@ -511,7 +512,7 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.errorCode).toBe('api_error');
+      expect(result.errorCode).toBe(ERROR_CODES.API_ERROR);
     });
 
     it('should handle unknown error types', async () => {
@@ -548,7 +549,7 @@ describe('summarizeText', () => {
       expect(result.ok).toBe(false);
       expect(result.error).toContain('Unknown error');
       // Error is wrapped with "API call failed: " which contains "API", so it's classified as api_error
-      expect(result.errorCode).toBe('api_error');
+      expect(result.errorCode).toBe(ERROR_CODES.API_ERROR);
     });
   });
 
@@ -738,9 +739,9 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Unsupported AI provider');
+      expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.UNSUPPORTED_PROVIDER));
       // Error is wrapped with "API call failed: " which contains "API", so it's classified as api_error
-      expect(result.errorCode).toBe('api_error');
+      expect(result.errorCode).toBe(ERROR_CODES.API_ERROR);
     });
   });
 
