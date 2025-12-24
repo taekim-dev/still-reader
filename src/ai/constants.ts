@@ -27,11 +27,11 @@ export const DEFAULT_MODELS: Record<string, string> = {
 } as const;
 
 export const SYSTEM_PROMPTS = {
-  groq: 'You are a helpful assistant that summarizes articles concisely. Provide a clear, informative summary in 2-3 sentences.',
-  openai: 'You are a helpful assistant that summarizes articles concisely. Provide a clear, informative summary in 2-3 sentences.',
-  anthropic: 'Please summarize the following article in 2-3 sentences:',
-  gemini: 'Please summarize the following article in 2-3 sentences:',
-  custom: 'You are a helpful assistant that summarizes articles concisely.',
+  groq: 'You are a helpful assistant that summarizes articles. Provide only the summary text in 2-3 sentences, without any introductory phrases or labels.',
+  openai: 'You are a helpful assistant that summarizes articles. Provide only the summary text in 2-3 sentences, without any introductory phrases or labels.',
+  anthropic: 'Provide only the summary text in 2-3 sentences, without any introductory phrases or labels.',
+  gemini: 'Provide only the summary text in 2-3 sentences, without any introductory phrases or labels.',
+  custom: 'You are a helpful assistant that summarizes articles. Provide only the summary text in 2-3 sentences, without any introductory phrases or labels.',
 } as const;
 
 export const USER_PROMPT_PREFIX = 'Please summarize the following article:\n\n';

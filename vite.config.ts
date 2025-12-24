@@ -206,6 +206,12 @@ function fixBackgroundWorker(): Plugin {
       // Fix T() -> c() (getAIConfig) - minifier sometimes uses T instead of c
       code = code.replace(/\bawait\s+T\(\)/g, 'await c()');
       code = code.replace(/\bT\(\)/g, 'c()');
+      // Fix E() -> c() (getAIConfig) - minifier sometimes uses E instead of c
+      code = code.replace(/\bawait\s+E\(\)/g, 'await c()');
+      code = code.replace(/\bE\(\)/g, 'c()');
+      // Fix O() -> s() (getThemePreference) - minifier sometimes uses O instead of s
+      code = code.replace(/\bawait\s+O\(\)/g, 'await s()');
+      code = code.replace(/\bO\(\)/g, 's()');
       
       // Fix duplicate variable 'i' - ERROR_CODES object conflicts with saveThemePreference function
       // Find ',i={' or 'const i={' (ERROR_CODES) and rename it to 'z'
