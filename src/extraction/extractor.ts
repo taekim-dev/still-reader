@@ -60,32 +60,45 @@ export function extractArticle(document: Document, options: ExtractOptions = {})
   const threshold = options.threshold ?? 0.35;
   const baseUrl = options.baseUrl ?? document.location?.href ?? 'http://localhost/';
 
+  // Step 1: Find all potential article container elements
   const elements = Array.from(document.querySelectorAll(CANDIDATE_SELECTOR));
-  const candidates = elements
-    .filter((el) => isVisible(el))
-    .map((el) => {
-      const scores = scoreElement(el);
-      return { el, scores, total: scores.total };
-    })
-    .filter((c) => c.scores.textLength >= MIN_TEXT_LENGTH || c.scores.paragraphCount >= 2);
 
+  // Step 2: Filter to only visible elements with content
+  const visibleElements = elements.filter((el) => isVisible(el));
+
+  // Step 3: Score each candidate element
+  const scoredCandidates = visibleElements.map((el) => {
+    const scores = scoreElement(el);
+    return { el, scores, total: scores.total };
+  });
+
+  // Step 4: Filter by minimum requirements (text length or paragraph count)
+  const candidates = scoredCandidates.filter(
+    (c) => c.scores.textLength >= MIN_TEXT_LENGTH || c.scores.paragraphCount >= 2
+  );
+
+  // Step 5: Check if we have any viable candidates
   if (!candidates.length) {
     return { unavailable: true, reason: 'No viable candidates found' };
   }
 
+  // Step 6: Sort by score and pick the best candidate
   candidates.sort((a, b) => b.total - a.total);
   const [top] = candidates;
-  const confidence = normalizeConfidence(top.total);
 
+  // Step 7: Calculate confidence and check against threshold
+  const confidence = normalizeConfidence(top.total);
   if (confidence < threshold) {
     return { unavailable: true, reason: 'Confidence below threshold', confidence };
   }
 
+  // Step 8: Sanitize, cleanup, and extract final content
   const sanitized = sanitizeClone(top.el, baseUrl);
   cleanupExtractedContent(sanitized);
   const html = sanitized.innerHTML.trim();
   const text = sanitized.textContent?.trim() ?? '';
 
+  // Final validation: ensure extracted content meets minimum size
   if (!html || text.length < MIN_TEXT_LENGTH) {
     return { unavailable: true, reason: 'Extracted content too small', confidence };
   }
@@ -199,15 +212,12 @@ function cleanupExtractedContent(element: HTMLElement): void {
     const dataLocation = el.getAttribute('data-location');
     const ariaLabel = el.getAttribute('aria-label');
 
-    // Semantic selectors - be specific
     if (el.tagName === 'HEADER' && (id === 'site-nav' || section === 'nav')) {
       return true;
     }
     if (el.tagName === 'NAV' && (section === 'top' || ariaLabel === 'site')) {
       return true;
     }
-
-    // Attribute-based patterns
     if (dataLocation === 'HEADER') {
       return true;
     }
@@ -215,7 +225,6 @@ function cleanupExtractedContent(element: HTMLElement): void {
       return true;
     }
 
-    // Class-based pattern matching (be specific to avoid false positives)
     const navPatterns = /(siteheader|site-header|siteheadermasthead|siteheadernavigation)/i;
     if (navPatterns.test(className) || navPatterns.test(id)) {
       return true;
@@ -229,17 +238,13 @@ function cleanupExtractedContent(element: HTMLElement): void {
     const id = el.id || '';
     const dataLocation = el.getAttribute('data-location');
 
-    // Semantic selector
     if (el.tagName === 'FOOTER') {
       return true;
     }
-
-    // Attribute-based
     if (dataLocation === 'FOOTER') {
       return true;
     }
 
-    // Class-based pattern matching (be specific)
     const footerPatterns = /(cat-footer|site-footer|main-footer|page-footer)/i;
     if (footerPatterns.test(className) || footerPatterns.test(id)) {
       return true;
@@ -254,14 +259,11 @@ function cleanupExtractedContent(element: HTMLElement): void {
     const linkCount = el.querySelectorAll('a').length;
     const paragraphCount = el.querySelectorAll('p').length;
 
-    // Pattern matching for related content class names (specific patterns)
     const relatedPatterns = /(bestlistlinkblock|articlelinkblock)/i;
     if (relatedPatterns.test(className)) {
       return true;
     }
 
-    // Heuristic: sections with headings like "Guides", "Related" and high link density
-    // Only if it's a smaller section (not the main article)
     const hasRelatedHeading = /^(guides?|related|recommended|you may also|read more|similar)/i.test(text.trim().substring(0, 50));
     if (hasRelatedHeading && linkCount > 5 && paragraphCount < linkCount && linkCount > paragraphCount * 2) {
       return true;
@@ -276,19 +278,15 @@ function cleanupExtractedContent(element: HTMLElement): void {
     const videoLocation = el.getAttribute('data-video-location');
     const videoPlacement = el.getAttribute('data-video-article-placement');
 
-    // Remove sticky video sections (modal videos, watch and read sections)
     if (videoLocation === 'MODAL' || videoPlacement === 'Watch and Read') {
       return true;
     }
     if (className.includes('c-avStickyVideo') || className.includes('c-CnetAvStickyVideo')) {
       return true;
     }
-
-    // Remove detailed video player elements but keep containers
     if (tag === 'video-js') {
       return true;
     }
-    // Remove video.js internal elements (but not the container divs)
     if (className.includes('vjs-') && !className.includes('c-avVideo') && !className.includes('c-avStickyVideo')) {
       return true;
     }
@@ -301,12 +299,10 @@ function cleanupExtractedContent(element: HTMLElement): void {
     const dataAd = el.getAttribute('data-ad');
     const dataAdCallout = el.getAttribute('data-ad-callout');
 
-    // All ad containers
     if (dataAd || dataAdCallout) {
       return true;
     }
 
-    // Pattern matching for ad-related classes
     const adPatterns = /(adDisplay|adContainer|advertisement|ad-slot|ad-unit|adSkyBox)/i;
     if (adPatterns.test(className)) {
       return true;
@@ -318,11 +314,9 @@ function cleanupExtractedContent(element: HTMLElement): void {
   const isArticleMeta = (el: Element): boolean => {
     const className = el.className || '';
 
-    // Remove article header meta containers (breadcrumbs, navigation)
     if (className.includes('c-articleHeader_metaContainer') || className.includes('c-articleHeader_meta')) {
       return true;
     }
-    // Remove breadcrumb navigation
     if (className.includes('c-topicBreadcrumbs')) {
       return true;
     }
@@ -335,7 +329,6 @@ function cleanupExtractedContent(element: HTMLElement): void {
     const section = el.getAttribute('section');
     const dataCy = el.getAttribute('data-cy');
 
-    // Remove author image cards
     if (className.includes('c-globalAuthorImage') || className.includes('c-globalAuthorCard')) {
       return true;
     }
@@ -347,21 +340,17 @@ function cleanupExtractedContent(element: HTMLElement): void {
   };
 
   const isScreenReaderTitle = (el: Element): boolean => {
-    // Remove screen-reader-only titles (typically redundant if title is in main content)
-    // These can be any element with sr-title class
     const className = el.className || '';
     if (typeof className === 'string' && className.includes('sr-title')) {
       return true;
     }
-    // Also check classList if available
     if (el.classList && el.classList.contains('sr-title')) {
       return true;
     }
-
     return false;
   };
 
-  // First, directly remove all sr-title elements using querySelector
+  // Remove screen-reader-only titles directly
   const srTitleElements = element.querySelectorAll('.sr-title');
   srTitleElements.forEach((el) => {
     if (el.parentNode) {
@@ -370,17 +359,14 @@ function cleanupExtractedContent(element: HTMLElement): void {
   });
 
   // Walk the tree and collect elements to remove
-  // Use a more targeted approach: query for specific patterns first
   const walker = element.ownerDocument.createTreeWalker(element, NodeFilter.SHOW_ELEMENT);
   while (walker.nextNode()) {
     const el = walker.currentNode as Element;
 
-    // Skip the root element itself
     if (el === element) {
       continue;
     }
 
-    // Check each category
     if (
       isNavigation(el) ||
       isFooter(el) ||
@@ -395,7 +381,7 @@ function cleanupExtractedContent(element: HTMLElement): void {
     }
   }
 
-  // Remove collected elements (in reverse order to avoid issues with parent removal)
+  // Remove collected elements (in reverse order to avoid parent removal issues)
   toRemove.reverse().forEach((node) => {
     if (node.parentNode) {
       node.parentNode.removeChild(node);
