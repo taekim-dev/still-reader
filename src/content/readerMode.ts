@@ -114,31 +114,29 @@ export function createReaderMode(initialState?: {
   }
 
   function setupControls(document: Document): void {
+    setupButtonHandlers(document);
+    setupKeyboardShortcuts(document);
+  }
+
+  /**
+   * Sets up click handlers for reader control buttons.
+   * @internal - Exported for testing
+   */
+  function setupButtonHandlers(document: Document): void {
     const inc = document.getElementById(ELEMENT_IDS.FONT_INC);
     const dec = document.getElementById(ELEMENT_IDS.FONT_DEC);
     const exit = document.getElementById(ELEMENT_IDS.EXIT);
 
-    const handleFontIncrease = () => {
-      if (!config) return;
-      config.fontScale = clampFontScale(config.fontScale + FONT_SCALE.INCREMENT);
-      applyState(document, config);
-    };
+    inc?.addEventListener('click', () => handleFontIncrease(document));
+    dec?.addEventListener('click', () => handleFontDecrease(document));
+    exit?.addEventListener('click', () => handleExit(document));
+  }
 
-    const handleFontDecrease = () => {
-      if (!config) return;
-      config.fontScale = clampFontScale(config.fontScale - FONT_SCALE.INCREMENT);
-      applyState(document, config);
-    };
-
-    const handleExit = () => {
-      deactivateReader(document);
-    };
-
-    inc?.addEventListener('click', handleFontIncrease);
-    dec?.addEventListener('click', handleFontDecrease);
-    exit?.addEventListener('click', handleExit);
-
-    // Add keyboard shortcuts when reader is active
+  /**
+   * Sets up keyboard shortcuts for reader mode.
+   * @internal - Exported for testing
+   */
+  function setupKeyboardShortcuts(document: Document): void {
     document.addEventListener('keydown', (e) => {
       // Don't trigger shortcuts when typing in inputs
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -148,24 +146,40 @@ export function createReaderMode(initialState?: {
       // Escape: Exit reader
       if (e.key === 'Escape') {
         e.preventDefault();
-        handleExit();
+        handleExit(document);
         return;
       }
 
       // + or =: Increase font
       if (e.key === '+' || e.key === '=') {
         e.preventDefault();
-        handleFontIncrease();
+        handleFontIncrease(document);
         return;
       }
 
       // -: Decrease font
       if (e.key === '-') {
         e.preventDefault();
-        handleFontDecrease();
+        handleFontDecrease(document);
         return;
       }
     });
+  }
+
+  function handleFontIncrease(document: Document): void {
+    if (!config) return;
+    config.fontScale = clampFontScale(config.fontScale + FONT_SCALE.INCREMENT);
+    applyState(document, config);
+  }
+
+  function handleFontDecrease(document: Document): void {
+    if (!config) return;
+    config.fontScale = clampFontScale(config.fontScale - FONT_SCALE.INCREMENT);
+    applyState(document, config);
+  }
+
+  function handleExit(document: Document): void {
+    deactivateReader(document);
   }
 
   return {
