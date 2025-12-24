@@ -256,35 +256,63 @@ function escapeHtml(input: string): string {
   });
 }
 
-function applyState(document: Document, next: ReaderState): void {
-  // Step 1: Update font scale
-  document.documentElement.style.setProperty(CSS_VARIABLES.FONT_SCALE, next.fontScale.toString());
-  
-  // Step 2: Update theme
-  const theme = next.theme;
+/**
+ * Update font scale CSS variable.
+ * @internal - Exported for testing
+ */
+export function updateFontScale(document: Document, fontScale: number): void {
+  document.documentElement.style.setProperty(CSS_VARIABLES.FONT_SCALE, fontScale.toString());
+}
+
+/**
+ * Apply theme colors to body element.
+ * @internal - Exported for testing
+ */
+export function applyThemeToBody(document: Document, theme: Theme): void {
   document.body.setAttribute('data-theme', theme);
   
-  // Step 3: Apply theme colors
-  const themeColors = getThemeColors(theme);
   const bgColor = getBackgroundColorVarRef(theme);
   const fgColor = getForegroundColorVarRef(theme);
   
   document.body.style.background = bgColor;
   document.body.style.color = fgColor;
-  
-  // Step 4: Update controls background
+}
+
+/**
+ * Apply theme background to controls element.
+ * @internal - Exported for testing
+ */
+export function applyThemeToControls(document: Document, theme: Theme): void {
   const controls = document.getElementById(ELEMENT_IDS.CONTROLS);
   if (controls) {
+    const bgColor = getBackgroundColorVarRef(theme);
     (controls as HTMLElement).style.background = bgColor;
   }
-  
-  // Step 5: Update button styles
+}
+
+/**
+ * Apply theme styles to control buttons.
+ * @internal - Exported for testing
+ */
+export function applyThemeToButtons(document: Document, theme: Theme): void {
+  const themeColors = getThemeColors(theme);
   const buttons = document.querySelectorAll(`#${ELEMENT_IDS.CONTROLS} button`);
+  
   buttons.forEach((btn) => {
     const button = btn as HTMLElement;
     button.style.borderColor = themeColors.border;
     button.style.background = themeColors.button;
   });
+}
+
+/**
+ * Apply reader state to document (font scale and theme).
+ */
+function applyState(document: Document, next: ReaderState): void {
+  updateFontScale(document, next.fontScale);
+  applyThemeToBody(document, next.theme);
+  applyThemeToControls(document, next.theme);
+  applyThemeToButtons(document, next.theme);
 }
 
 function clampFontScale(value: number): number {
