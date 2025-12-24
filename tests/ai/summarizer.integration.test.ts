@@ -5,9 +5,10 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+import { ERROR_CODES, ERROR_PREFIXES, getUserFriendlyMessage } from '../../src/ai/errorMessages';
 import { summarizeText } from '../../src/ai/summarizer';
-import { getAIConfig, saveAIConfig, AIConfig } from '../../src/extension/storage';
 import { SummarizeMessage, SummarizeResponse } from '../../src/extension/messages';
+import { getAIConfig, saveAIConfig, AIConfig } from '../../src/extension/storage';
 
 // Mock chrome.storage.sync
 const mockStorage: Record<string, any> = {};
@@ -60,8 +61,8 @@ const mockSendMessage = vi.fn();
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-// @ts-expect-error - Mocking chrome global
-global.chrome = {
+// Mock chrome global
+(global as any).chrome = {
   storage: mockChromeStorage,
   runtime: {
     sendMessage: mockSendMessage,
@@ -153,8 +154,8 @@ describe('AI Summarization Integration Tests', () => {
 
       // Verify graceful error response
       expect(response.ok).toBe(false);
-      expect(response.error).toContain('not configured');
-      expect(response.errorCode).toBe('no_api_key');
+      expect(response.error).toContain(getUserFriendlyMessage(ERROR_CODES.NO_API_KEY));
+      expect(response.errorCode).toBe(ERROR_CODES.NO_API_KEY);
       expect(response.summary).toBeUndefined();
 
       // Verify no API call was made
@@ -187,8 +188,8 @@ describe('AI Summarization Integration Tests', () => {
 
       // Step 5: Verify error response
       expect(response.ok).toBe(false);
-      expect(response.error).toContain('Summarization failed');
-      expect(response.errorCode).toBe('api_error');
+      expect(response.error).toContain(ERROR_PREFIXES.SUMMARIZATION_FAILED);
+      expect(response.errorCode).toBe(ERROR_CODES.API_ERROR);
       expect(response.summary).toBeUndefined();
     });
 
@@ -211,8 +212,8 @@ describe('AI Summarization Integration Tests', () => {
 
       // Step 4: Verify error response
       expect(response.ok).toBe(false);
-      expect(response.error).toContain('too short');
-      expect(response.errorCode).toBe('unknown');
+      expect(response.error).toContain(getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT));
+      expect(response.errorCode).toBe(ERROR_CODES.UNKNOWN);
       expect(response.summary).toBeUndefined();
 
       // Verify no API call was made
@@ -342,7 +343,7 @@ describe('AI Summarization Integration Tests', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.errorCode).toBe('no_api_key');
+      expect(result.errorCode).toBe(ERROR_CODES.NO_API_KEY);
     });
   });
 
@@ -362,9 +363,9 @@ describe('AI Summarization Integration Tests', () => {
       );
 
       expect(response.ok).toBe(false);
-      expect(response.error).toContain('Summarization failed');
+      expect(response.error).toContain(ERROR_PREFIXES.SUMMARIZATION_FAILED);
       expect(response.error).toContain('fetch failed');
-      expect(response.errorCode).toBe('network_error');
+      expect(response.errorCode).toBe(ERROR_CODES.NETWORK_ERROR);
     });
 
     it('should propagate timeout errors correctly', async () => {
@@ -381,7 +382,7 @@ describe('AI Summarization Integration Tests', () => {
       );
 
       expect(response.ok).toBe(false);
-      expect(response.errorCode).toBe('timeout');
+      expect(response.errorCode).toBe(ERROR_CODES.TIMEOUT);
     });
 
     it('should handle storage errors gracefully', async () => {
