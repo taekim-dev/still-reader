@@ -197,6 +197,9 @@ function fixBackgroundWorker(): Plugin {
       code = code.replace(/\bm\(\)/g, 'c()');
       code = code.replace(/\bawait\s+u\(\)/g, 'await c()');
       code = code.replace(/\bu\(\)/g, 'c()');
+      // Fix p() -> c() (getAIConfig) - minifier sometimes uses p instead of c
+      code = code.replace(/\bawait\s+p\(\)/g, 'await c()');
+      code = code.replace(/\bp\(\)/g, 'c()');
 
       writeFileSync(backgroundPath, code, 'utf-8');
     },

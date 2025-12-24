@@ -8,6 +8,17 @@
  * Core reader functionality will continue to work regardless of AI status.
  */
 
+import {
+  DEFAULT_PROVIDER,
+  DEFAULT_MAX_TOKENS,
+  DEFAULT_TEMPERATURE,
+  MIN_TEXT_LENGTH,
+  MAX_TEXT_LENGTH,
+  ANTHROPIC_VERSION,
+  DEFAULT_SUMMARY_FALLBACK,
+  TRUNCATION_ELLIPSIS,
+} from './constants';
+
 export interface SummarizerConfig {
   apiKey: string;
   provider?: 'openai' | 'anthropic' | 'groq' | 'gemini' | 'custom';
@@ -41,7 +52,7 @@ export async function summarizeText(
   }
 
   // Validate input
-  if (!text || text.trim().length < 50) {
+  if (!text || text.trim().length < MIN_TEXT_LENGTH) {
     return {
       ok: false,
       error: 'Text is too short to summarize.',
@@ -89,13 +100,13 @@ export async function summarizeText(
  * - Google Gemini: https://aistudio.google.com/app/apikey (Free tier: 60 requests/min)
  */
 async function callLLMAPI(text: string, config: SummarizerConfig): Promise<string> {
-  const provider = config.provider ?? 'groq'; // Default to Groq (best free tier)
+  const provider = config.provider ?? DEFAULT_PROVIDER;
   const model = config.model ?? getDefaultModel(provider);
-  const maxTokens = config.maxTokens ?? 200;
+  const maxTokens = config.maxTokens ?? DEFAULT_MAX_TOKENS;
   const apiKey = config.apiKey;
 
   // Truncate text to reasonable length (most APIs have token limits)
-  const truncatedText = truncateText(text, 8000); // ~2000 words
+  const truncatedText = truncateText(text, MAX_TEXT_LENGTH);
 
   try {
     switch (provider) {
@@ -133,7 +144,7 @@ function getDefaultModel(provider: string): string {
 
 function truncateText(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text;
-  return text.substring(0, maxChars) + '...';
+  return text.substring(0, maxChars) + TRUNCATION_ELLIPSIS;
 }
 
 // Groq API (RECOMMENDED: Best free tier - 14,400 requests/day)
@@ -157,7 +168,7 @@ async function callGroqAPI(text: string, apiKey: string, model: string, maxToken
         },
       ],
       max_tokens: maxTokens,
-      temperature: 0.7,
+      temperature: DEFAULT_TEMPERATURE,
     }),
   });
 
@@ -167,7 +178,7 @@ async function callGroqAPI(text: string, apiKey: string, model: string, maxToken
   }
 
   const data = await response.json();
-  return data.choices[0]?.message?.content ?? 'No summary generated';
+  return data.choices[0]?.message?.content ?? DEFAULT_SUMMARY_FALLBACK;
 }
 
 // OpenAI API
@@ -191,7 +202,7 @@ async function callOpenAIAPI(text: string, apiKey: string, model: string, maxTok
         },
       ],
       max_tokens: maxTokens,
-      temperature: 0.7,
+      temperature: DEFAULT_TEMPERATURE,
     }),
   });
 
@@ -201,7 +212,7 @@ async function callOpenAIAPI(text: string, apiKey: string, model: string, maxTok
   }
 
   const data = await response.json();
-  return data.choices[0]?.message?.content ?? 'No summary generated';
+  return data.choices[0]?.message?.content ?? DEFAULT_SUMMARY_FALLBACK;
 }
 
 // Anthropic API
@@ -210,7 +221,7 @@ async function callAnthropicAPI(text: string, apiKey: string, model: string, max
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+      'anthropic-version': ANTHROPIC_VERSION,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -231,7 +242,7 @@ async function callAnthropicAPI(text: string, apiKey: string, model: string, max
   }
 
   const data = await response.json();
-  return data.content[0]?.text ?? 'No summary generated';
+  return data.content[0]?.text ?? DEFAULT_SUMMARY_FALLBACK;
 }
 
 // Google Gemini API
@@ -264,7 +275,7 @@ async function callGeminiAPI(text: string, apiKey: string, model: string, maxTok
   }
 
   const data = await response.json();
-  return data.candidates[0]?.content?.parts[0]?.text ?? 'No summary generated';
+  return data.candidates[0]?.content?.parts[0]?.text ?? DEFAULT_SUMMARY_FALLBACK;
 }
 
 // Custom API (for self-hosted or other providers)
@@ -304,7 +315,7 @@ async function callCustomAPI(
   }
 
   const data = await response.json();
-  return data.choices[0]?.message?.content ?? 'No summary generated';
+  return data.choices[0]?.message?.content ?? DEFAULT_SUMMARY_FALLBACK;
 }
 
 /**
