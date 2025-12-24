@@ -17,7 +17,11 @@ import {
   ANTHROPIC_VERSION,
   DEFAULT_SUMMARY_FALLBACK,
   TRUNCATION_ELLIPSIS,
+  API_ENDPOINTS,
+  SYSTEM_PROMPTS,
+  USER_PROMPT_PREFIX,
 } from './constants';
+import { ERROR_CODES, getUserFriendlyMessage, ERROR_PREFIXES } from './errorMessages';
 import { getDefaultModel, truncateText, classifyError } from './utils';
 
 export interface SummarizerConfig {
@@ -43,21 +47,21 @@ export async function summarizeText(
   text: string,
   config: SummarizerConfig | null
 ): Promise<SummarizerResult> {
-  // Graceful degradation: if no config, return friendly error
+  // Step 1: Validate configuration
   if (!config || !config.apiKey) {
     return {
       ok: false,
-      error: 'AI summarization is not configured. Please add an API key in settings.',
-      errorCode: 'no_api_key',
+      error: getUserFriendlyMessage(ERROR_CODES.NO_API_KEY),
+      errorCode: ERROR_CODES.NO_API_KEY,
     };
   }
 
-  // Validate input
+  // Step 2: Validate input text
   if (!text || text.trim().length < MIN_TEXT_LENGTH) {
     return {
       ok: false,
-      error: 'Text is too short to summarize.',
-      errorCode: 'unknown',
+      error: getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT),
+      errorCode: ERROR_CODES.UNKNOWN,
     };
   }
 
@@ -73,7 +77,7 @@ export async function summarizeText(
 
     return {
       ok: false,
-      error: `Summarization failed: ${errorMessage}`,
+      error: `${ERROR_PREFIXES.SUMMARIZATION_FAILED}: ${errorMessage}`,
       errorCode,
     };
   }
@@ -112,22 +116,24 @@ async function callLLMAPI(text: string, config: SummarizerConfig): Promise<strin
         return await callGeminiAPI(truncatedText, apiKey, model, maxTokens);
       case 'custom':
         if (!config.apiBaseUrl) {
-          throw new Error('Custom provider requires apiBaseUrl');
+          throw new Error(getUserFriendlyMessage(ERROR_CODES.CUSTOM_PROVIDER_MISSING_URL));
         }
         return await callCustomAPI(truncatedText, apiKey, config.apiBaseUrl, model, maxTokens);
       default:
-        throw new Error(`Unsupported provider: ${provider}`);
+        throw new Error(getUserFriendlyMessage(ERROR_CODES.UNSUPPORTED_PROVIDER));
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    throw new Error(`API call failed: ${errorMessage}`);
+    throw new Error(`${ERROR_PREFIXES.API_CALL_FAILED}: ${errorMessage}`);
   }
 }
 
 
-// Groq API (RECOMMENDED: Best free tier - 14,400 requests/day)
+/**
+ * Call Groq API.
+ */
 async function callGroqAPI(text: string, apiKey: string, model: string, maxTokens: number): Promise<string> {
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const response = await fetch(API_ENDPOINTS.groq, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -138,11 +144,11 @@ async function callGroqAPI(text: string, apiKey: string, model: string, maxToken
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful assistant that summarizes articles concisely. Provide a clear, informative summary in 2-3 sentences.',
+          content: SYSTEM_PROMPTS.groq,
         },
         {
           role: 'user',
-          content: `Please summarize the following article:\n\n${text}`,
+          content: `${USER_PROMPT_PREFIX}${text}`,
         },
       ],
       max_tokens: maxTokens,
@@ -152,16 +158,18 @@ async function callGroqAPI(text: string, apiKey: string, model: string, maxToken
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Groq API error: ${response.status} - ${error}`);
+    throw new Error(`${ERROR_PREFIXES.GROQ_API}: ${response.status} - ${error}`);
   }
 
   const data = await response.json();
   return data.choices[0]?.message?.content ?? DEFAULT_SUMMARY_FALLBACK;
 }
 
-// OpenAI API
+/**
+ * Call OpenAI API.
+ */
 async function callOpenAIAPI(text: string, apiKey: string, model: string, maxTokens: number): Promise<string> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(API_ENDPOINTS.openai, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -172,11 +180,11 @@ async function callOpenAIAPI(text: string, apiKey: string, model: string, maxTok
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful assistant that summarizes articles concisely. Provide a clear, informative summary in 2-3 sentences.',
+          content: SYSTEM_PROMPTS.openai,
         },
         {
           role: 'user',
-          content: `Please summarize the following article:\n\n${text}`,
+          content: `${USER_PROMPT_PREFIX}${text}`,
         },
       ],
       max_tokens: maxTokens,
@@ -186,16 +194,18 @@ async function callOpenAIAPI(text: string, apiKey: string, model: string, maxTok
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`OpenAI API error: ${response.status} - ${error}`);
+    throw new Error(`${ERROR_PREFIXES.OPENAI_API}: ${response.status} - ${error}`);
   }
 
   const data = await response.json();
   return data.choices[0]?.message?.content ?? DEFAULT_SUMMARY_FALLBACK;
 }
 
-// Anthropic API
+/**
+ * Call Anthropic API.
+ */
 async function callAnthropicAPI(text: string, apiKey: string, model: string, maxTokens: number): Promise<string> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch(API_ENDPOINTS.anthropic, {
     method: 'POST',
     headers: {
       'x-api-key': apiKey,
@@ -208,7 +218,7 @@ async function callAnthropicAPI(text: string, apiKey: string, model: string, max
       messages: [
         {
           role: 'user',
-          content: `Please summarize the following article in 2-3 sentences:\n\n${text}`,
+          content: `${SYSTEM_PROMPTS.anthropic}\n\n${text}`,
         },
       ],
     }),
@@ -216,16 +226,18 @@ async function callAnthropicAPI(text: string, apiKey: string, model: string, max
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Anthropic API error: ${response.status} - ${error}`);
+    throw new Error(`${ERROR_PREFIXES.ANTHROPIC_API}: ${response.status} - ${error}`);
   }
 
   const data = await response.json();
   return data.content[0]?.text ?? DEFAULT_SUMMARY_FALLBACK;
 }
 
-// Google Gemini API
+/**
+ * Call Gemini API.
+ */
 async function callGeminiAPI(text: string, apiKey: string, model: string, maxTokens: number): Promise<string> {
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+  const response = await fetch(API_ENDPOINTS.gemini(model, apiKey), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -235,28 +247,30 @@ async function callGeminiAPI(text: string, apiKey: string, model: string, maxTok
         {
           parts: [
             {
-              text: `Please summarize the following article in 2-3 sentences:\n\n${text}`,
+              text: `${SYSTEM_PROMPTS.gemini}\n\n${text}`,
             },
           ],
         },
       ],
       generationConfig: {
         maxOutputTokens: maxTokens,
-        temperature: 0.7,
+        temperature: DEFAULT_TEMPERATURE,
       },
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${error}`);
+    throw new Error(`${ERROR_PREFIXES.GEMINI_API}: ${response.status} - ${error}`);
   }
 
   const data = await response.json();
   return data.candidates[0]?.content?.parts[0]?.text ?? DEFAULT_SUMMARY_FALLBACK;
 }
 
-// Custom API (for self-hosted or other providers)
+/**
+ * Call Custom API (for self-hosted or other providers).
+ */
 async function callCustomAPI(
   text: string,
   apiKey: string,
@@ -264,7 +278,6 @@ async function callCustomAPI(
   model: string,
   maxTokens: number
 ): Promise<string> {
-  // Generic OpenAI-compatible API format
   const response = await fetch(`${apiBaseUrl}/v1/chat/completions`, {
     method: 'POST',
     headers: {
@@ -276,11 +289,11 @@ async function callCustomAPI(
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful assistant that summarizes articles concisely.',
+          content: SYSTEM_PROMPTS.custom,
         },
         {
           role: 'user',
-          content: `Please summarize the following article:\n\n${text}`,
+          content: `${USER_PROMPT_PREFIX}${text}`,
         },
       ],
       max_tokens: maxTokens,
@@ -289,7 +302,7 @@ async function callCustomAPI(
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Custom API error: ${response.status} - ${error}`);
+    throw new Error(`${ERROR_PREFIXES.CUSTOM_API}: ${response.status} - ${error}`);
   }
 
   const data = await response.json();

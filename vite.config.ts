@@ -203,6 +203,24 @@ function fixBackgroundWorker(): Plugin {
       // Fix p() -> c() (getAIConfig) - minifier sometimes uses p instead of c
       code = code.replace(/\bawait\s+p\(\)/g, 'await c()');
       code = code.replace(/\bp\(\)/g, 'c()');
+      // Fix T() -> c() (getAIConfig) - minifier sometimes uses T instead of c
+      code = code.replace(/\bawait\s+T\(\)/g, 'await c()');
+      code = code.replace(/\bT\(\)/g, 'c()');
+      
+      // Fix duplicate variable 'i' - ERROR_CODES object conflicts with saveThemePreference function
+      // Find ',i={' or 'const i={' (ERROR_CODES) and rename it to 'z'
+      // Then update all references from i.NO_API_KEY to z.NO_API_KEY, etc.
+      if (code.includes('async function i(') && (code.includes('const i={') || code.includes(',i={'))) {
+        // Rename ERROR_CODES object from 'i' to 'z'
+        code = code.replace(/\bconst i=\{/g, 'const z={');
+        code = code.replace(/,i=\{/g, ',z={');
+        // Update all references: i.NO_API_KEY -> z.NO_API_KEY, i.UNKNOWN -> z.UNKNOWN, etc.
+        // Match i. followed by uppercase constant names (but not in the declaration itself)
+        code = code.replace(/\bi\.([A-Z_]+)/g, 'z.$1');
+        // Update references in object access: [i.NO_API_KEY] -> [z.NO_API_KEY]
+        code = code.replace(/\[i\.([A-Z_]+)\]/g, '[z.$1]');
+        console.log('[fixBackgroundWorker] Fixed duplicate variable "i" (ERROR_CODES -> z)');
+      }
 
       writeFileSync(backgroundPath, code, 'utf-8');
     },

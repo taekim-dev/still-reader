@@ -407,7 +407,7 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Custom provider requires apiBaseUrl');
+      expect(result.error).toContain('Custom provider requires an API base URL');
       // Error is wrapped with "API call failed: " which contains "API", so it's classified as api_error
       expect(result.errorCode).toBe('api_error');
     });
@@ -738,7 +738,7 @@ describe('summarizeText', () => {
       );
 
       expect(result.ok).toBe(false);
-      expect(result.error).toContain('Unsupported provider');
+      expect(result.error).toContain('Unsupported AI provider');
       // Error is wrapped with "API call failed: " which contains "API", so it's classified as api_error
       expect(result.errorCode).toBe('api_error');
     });

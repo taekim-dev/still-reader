@@ -2,15 +2,8 @@
  * Utility functions for AI summarization service.
  */
 
+import { DEFAULT_MODELS } from './constants';
 import { SummarizerResult } from './summarizer';
-
-// Default models for each provider
-const DEFAULT_MODELS: Record<string, string> = {
-  groq: 'llama-3.1-8b-instant',
-  openai: 'gpt-3.5-turbo',
-  anthropic: 'claude-3-haiku-20240307',
-  gemini: 'gemini-pro',
-};
 
 /**
  * Get default model for a provider.
