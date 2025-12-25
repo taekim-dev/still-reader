@@ -6,6 +6,7 @@ import {
   DIMENSIONS,
   ELEMENT_IDS,
   FONT_SCALE,
+  SUMMARY_MESSAGES,
   TYPOGRAPHY,
 } from './constants';
 import {
@@ -70,6 +71,7 @@ export function createReaderMode(initialState?: {
     };
     applyState(document, config);
     setupControls(document);
+    setupSummaryControls(document);
 
     isActive = true;
     return { ok: true };
@@ -163,6 +165,17 @@ export function createReaderMode(initialState?: {
         handleFontDecrease(document);
         return;
       }
+
+      // Option+S / Alt+S: Generate summary (backup handler)
+      // Note: This is also handled via manifest command, but this provides
+      // a backup in case the command doesn't work
+      if ((e.altKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        // Trigger summary via message to content script
+        // This will be handled by contentHandler
+        document.dispatchEvent(new CustomEvent('sr-summarize'));
+        return;
+      }
     });
   }
 
@@ -182,11 +195,64 @@ export function createReaderMode(initialState?: {
     deactivateReader(document);
   }
 
+  function showSummary(document: Document, summary: string): void {
+    const summaryEl = document.getElementById(ELEMENT_IDS.SUMMARY);
+    const contentEl = document.getElementById(ELEMENT_IDS.SUMMARY_CONTENT);
+    if (!summaryEl || !contentEl) return;
+
+    contentEl.textContent = summary;
+    summaryEl.style.display = 'block';
+    summaryEl.classList.remove('collapsed');
+    updateSummaryToggleButton(document);
+  }
+
+  function hideSummary(document: Document): void {
+    const summaryEl = document.getElementById(ELEMENT_IDS.SUMMARY);
+    if (!summaryEl) return;
+    summaryEl.style.display = 'none';
+  }
+
+  function removeSummary(document: Document): void {
+    hideSummary(document);
+    const contentEl = document.getElementById(ELEMENT_IDS.SUMMARY_CONTENT);
+    if (contentEl) {
+      contentEl.textContent = '';
+    }
+  }
+
+  function toggleSummaryCollapse(document: Document): void {
+    const summaryEl = document.getElementById(ELEMENT_IDS.SUMMARY);
+    if (!summaryEl) return;
+    summaryEl.classList.toggle('collapsed');
+    updateSummaryToggleButton(document);
+  }
+
+  function updateSummaryToggleButton(document: Document): void {
+    const toggleBtn = document.getElementById(ELEMENT_IDS.SUMMARY_TOGGLE);
+    const summaryEl = document.getElementById(ELEMENT_IDS.SUMMARY);
+    if (!toggleBtn || !summaryEl) return;
+    // Update icon: ▼ for collapse (down), ▲ for expand (up)
+    toggleBtn.textContent = summaryEl.classList.contains('collapsed') ? '▲' : '▼';
+    toggleBtn.setAttribute(
+      'aria-label',
+      summaryEl.classList.contains('collapsed') ? SUMMARY_MESSAGES.EXPAND : SUMMARY_MESSAGES.COLLAPSE
+    );
+  }
+
+  function setupSummaryControls(document: Document): void {
+    const toggleBtn = document.getElementById(ELEMENT_IDS.SUMMARY_TOGGLE);
+    toggleBtn?.addEventListener('click', () => toggleSummaryCollapse(document));
+  }
+
   return {
     activateReader,
     deactivateReader,
     isReaderActive,
     changeTheme,
+    showSummary,
+    hideSummary,
+    removeSummary,
+    toggleSummaryCollapse,
   };
 }
 
@@ -198,6 +264,10 @@ export const activateReader = readerMode.activateReader;
 export const deactivateReader = readerMode.deactivateReader;
 export const isReaderActive = readerMode.isReaderActive;
 export const changeTheme = readerMode.changeTheme;
+export const showSummary = readerMode.showSummary;
+export const hideSummary = readerMode.hideSummary;
+export const removeSummary = readerMode.removeSummary;
+export const toggleSummaryCollapse = readerMode.toggleSummaryCollapse;
 
 /**
  * Generate CSS styles for reader mode.
@@ -274,6 +344,69 @@ export function generateStyles(theme: Theme, fontScale: number): string {
     #${ELEMENT_IDS.CONTROLS} button:hover {
       border-color: ${themeColors.buttonHover};
     }
+    .sr-summary {
+      margin: 24px 0;
+      border: 1px solid ${themeColors.border};
+      border-radius: 8px;
+      background: ${bgColorVar};
+      overflow: hidden;
+    }
+    #${ELEMENT_IDS.SUMMARY_HEADER} {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid ${themeColors.border};
+      background: ${bgColorVar};
+    }
+    #${ELEMENT_IDS.SUMMARY_HEADER} h2 {
+      margin: 0;
+      font-size: 1.1em;
+      font-weight: 600;
+    }
+    .sr-summary-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .sr-icon-button {
+      min-width: 2.5em;
+      height: 2.5em;
+      padding: 0.5em 0.75em;
+      border: 1px solid ${themeColors.border};
+      background: ${themeColors.button};
+      color: inherit;
+      border-radius: 6px;
+      cursor: pointer;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1em;
+      transition: all 0.2s ease;
+      opacity: 0.85;
+    }
+    .sr-icon-button:hover {
+      opacity: 1;
+      background: ${themeColors.border};
+      border-color: ${themeColors.buttonHover};
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .sr-icon-button:active {
+      transform: translateY(0);
+    }
+    #${ELEMENT_IDS.SUMMARY_TOGGLE} {
+      font-size: 1.1em;
+      font-weight: 500;
+    }
+    #${ELEMENT_IDS.SUMMARY_CONTENT} {
+      padding: 16px;
+      line-height: 1.6;
+    }
+    .sr-summary.collapsed #${ELEMENT_IDS.SUMMARY_CONTENT} {
+      display: none;
+    }
   `;
 }
 
@@ -307,6 +440,15 @@ export function generateBody(title: string | undefined, html: string, theme: The
       <button id="${ELEMENT_IDS.FONT_DEC}" aria-label="Decrease font size">A-</button>
       <button id="${ELEMENT_IDS.FONT_INC}" aria-label="Increase font size">A+</button>
       <button id="${ELEMENT_IDS.EXIT}" aria-label="Exit reader">Exit</button>
+    </div>
+    <div id="${ELEMENT_IDS.SUMMARY}" class="sr-summary" style="display: none;">
+      <div id="${ELEMENT_IDS.SUMMARY_HEADER}" class="sr-summary-header">
+        <h2>${SUMMARY_MESSAGES.TITLE}</h2>
+        <div class="sr-summary-actions">
+          <button id="${ELEMENT_IDS.SUMMARY_TOGGLE}" aria-label="${SUMMARY_MESSAGES.COLLAPSE}" class="sr-icon-button">▼</button>
+        </div>
+      </div>
+      <div id="${ELEMENT_IDS.SUMMARY_CONTENT}" class="sr-summary-content"></div>
     </div>
     ${titleElement}
     <article class="sr-article">

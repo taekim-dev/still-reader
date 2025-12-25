@@ -59,6 +59,65 @@ export function handleReaderMessage(document: Document, message: ReaderMessage):
     };
   }
 
+  if (message.type === 'summarize') {
+    // This is handled asynchronously - trigger it but don't wait
+    // The actual summary will be displayed via showSummary
+    handleSummarizeRequest(document).catch((error) => {
+      console.error('Summarize error:', error);
+    });
+    return { ok: true }; // Return immediately, summary will appear when ready
+  }
+
   return { ok: false, reason: 'unknown_message' };
+}
+
+/**
+ * Handle summarize request - gets article text and generates summary.
+ */
+async function handleSummarizeRequest(document: Document): Promise<void> {
+  const { showSummary } = await import('../content/readerMode');
+  const { getArticleText } = await import('../content/contentScript');
+
+  // Check if reader is active
+  if (!isReaderActive()) {
+    console.warn('Cannot summarize: reader mode not active');
+    return;
+  }
+
+  // Step 1: Get article text
+  const textResult = getArticleText(document);
+  if (!textResult.ok || !textResult.text) {
+    console.warn('Failed to get article text:', textResult.reason);
+    return;
+  }
+
+  // Step 2: Show loading state
+  const { SUMMARY_MESSAGES } = await import('../content/constants');
+  showSummary(document, SUMMARY_MESSAGES.GENERATING);
+
+  // Step 3: Send to background for summarization
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: 'summarize',
+      text: textResult.text,
+    });
+
+    if (response.ok && response.summary) {
+      showSummary(document, response.summary);
+    } else {
+      const errorMsg = response.error ?? 'Unknown error';
+      const isNotConfigured = response.errorCode === 'no_api_key';
+      showSummary(
+        document,
+        isNotConfigured ? SUMMARY_MESSAGES.NOT_CONFIGURED : `Error: ${errorMsg}`
+      );
+    }
+  } catch (error) {
+    showSummary(
+      document,
+      `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+    console.error('Summarize error:', error);
+  }
 }
 

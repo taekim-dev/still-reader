@@ -39,6 +39,13 @@
         "mac": "Option+R"
       },
       "description": "Activate reader mode"
+    },
+    "summarize": {
+      "suggested_key": {
+        "default": "Alt+S",
+        "mac": "Option+S"
+      },
+      "description": "Generate AI summary"
     }
   }
 }

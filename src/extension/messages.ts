@@ -4,7 +4,8 @@ export type ReaderMessage =
   | { type: 'toggle-reader' }
   | { type: 'changeTheme'; theme: 'light' | 'dark' }
   | { type: 'ping' }
-  | { type: 'getArticleText' };
+  | { type: 'getArticleText' }
+  | { type: 'summarize' };
 
 export interface ReaderResponse {
   ok: boolean;

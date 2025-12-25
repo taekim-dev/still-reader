@@ -99,7 +99,21 @@ export const ELEMENT_IDS = {
   FONT_DEC: 'sr-font-dec',
   EXIT: 'sr-exit',
   UNAVAILABLE: 'still-reader-unavailable',
+  SUMMARY: 'still-reader-summary',
+  SUMMARY_HEADER: 'sr-summary-header',
+  SUMMARY_CONTENT: 'sr-summary-content',
+  SUMMARY_TOGGLE: 'sr-summary-toggle',
+  SUMMARY_CLOSE: 'sr-summary-close',
 } as const;
 
 export const DEFAULT_TITLE = 'Reader';
+
+export const SUMMARY_MESSAGES = {
+  TITLE: 'AI Summary',
+  COLLAPSE: 'Collapse summary',
+  EXPAND: 'Expand summary',
+  CLOSE: 'Close summary',
+  GENERATING: 'Generating summary...',
+  NOT_CONFIGURED: 'AI summarization is not configured. Please add an API key in extension settings.',
+} as const;
 
