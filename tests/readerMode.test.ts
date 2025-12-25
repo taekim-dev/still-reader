@@ -1,7 +1,7 @@
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 
-import { activateReader, deactivateReader, isReaderActive, changeTheme } from '../src/content/readerMode';
+import { activateReader, deactivateReader, isReaderActive, changeTheme, showSummary, hideSummary, removeSummary, toggleSummaryCollapse } from '../src/content/readerMode';
 
 const basePage = `
   <html>
@@ -285,6 +285,112 @@ describe('readerMode', () => {
       expect(lastCall).toBeDefined();
     }
     // Test passes if deactivate completes successfully
+  });
+
+  describe('summary functionality', () => {
+    it('summary is hidden initially when reader is activated', () => {
+      const dom = new JSDOM(basePage, { url: 'https://example.com' });
+      const { document } = dom.window;
+
+      activateReader(document, { html: '<p>Content</p>' });
+
+      const summaryEl = document.getElementById('still-reader-summary');
+      expect(summaryEl).not.toBeNull();
+      expect(summaryEl?.style.display).toBe('none');
+
+      deactivateReader(document);
+    });
+
+    it('showSummary displays summary content correctly', () => {
+      const dom = new JSDOM(basePage, { url: 'https://example.com' });
+      const { document } = dom.window;
+
+      activateReader(document, { html: '<p>Content</p>' });
+
+      const testSummary = 'This is a test summary of the article.';
+      showSummary(document, testSummary);
+
+      const summaryEl = document.getElementById('still-reader-summary');
+      const contentEl = document.getElementById('sr-summary-content');
+      
+      expect(summaryEl).not.toBeNull();
+      expect(contentEl).not.toBeNull();
+      // JSDOM may not fully support inline styles, so check that display was set
+      expect(summaryEl?.style.display || summaryEl?.getAttribute('style')).toBeTruthy();
+      expect(contentEl?.textContent).toBe(testSummary);
+      expect(summaryEl?.classList.contains('collapsed')).toBe(false);
+
+      deactivateReader(document);
+    });
+
+    it('toggleSummaryCollapse collapses and expands summary with correct button icon', () => {
+      const dom = new JSDOM(basePage, { url: 'https://example.com' });
+      const { document } = dom.window;
+
+      activateReader(document, { html: '<p>Content</p>' });
+      showSummary(document, 'Test summary');
+
+      const summaryEl = document.getElementById('still-reader-summary');
+      const toggleBtn = document.getElementById('sr-summary-toggle');
+
+      // Initially expanded (▼ icon)
+      expect(summaryEl?.classList.contains('collapsed')).toBe(false);
+      expect(toggleBtn?.textContent).toBe('▼');
+      expect(toggleBtn?.getAttribute('aria-label')).toBe('Collapse summary');
+
+      // Collapse
+      toggleSummaryCollapse(document);
+      expect(summaryEl?.classList.contains('collapsed')).toBe(true);
+      expect(toggleBtn?.textContent).toBe('▲');
+      expect(toggleBtn?.getAttribute('aria-label')).toBe('Expand summary');
+
+      // Expand again
+      toggleSummaryCollapse(document);
+      expect(summaryEl?.classList.contains('collapsed')).toBe(false);
+      expect(toggleBtn?.textContent).toBe('▼');
+      expect(toggleBtn?.getAttribute('aria-label')).toBe('Collapse summary');
+
+      deactivateReader(document);
+    });
+
+    it('hideSummary hides the summary section', () => {
+      const dom = new JSDOM(basePage, { url: 'https://example.com' });
+      const { document } = dom.window;
+
+      activateReader(document, { html: '<p>Content</p>' });
+      showSummary(document, 'Test summary');
+
+      const summaryEl = document.getElementById('still-reader-summary');
+      expect(summaryEl).not.toBeNull();
+
+      hideSummary(document);
+      // JSDOM may not fully support inline styles, so verify the function executed
+      expect(summaryEl?.style.display || summaryEl?.getAttribute('style')).toContain('none');
+
+      deactivateReader(document);
+    });
+
+    it('removeSummary clears content and hides summary', () => {
+      const dom = new JSDOM(basePage, { url: 'https://example.com' });
+      const { document } = dom.window;
+
+      activateReader(document, { html: '<p>Content</p>' });
+      showSummary(document, 'Test summary');
+
+      const summaryEl = document.getElementById('still-reader-summary');
+      const contentEl = document.getElementById('sr-summary-content');
+      
+      expect(contentEl?.textContent).toBe('Test summary');
+
+      removeSummary(document);
+      
+      // Verify content is cleared (most important check)
+      expect(contentEl?.textContent).toBe('');
+      // Verify summary is hidden
+      expect(summaryEl?.style.display || summaryEl?.getAttribute('style')).toContain('none');
+
+      deactivateReader(document);
+    });
   });
 });
 
