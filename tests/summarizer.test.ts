@@ -48,7 +48,7 @@ describe('summarizeText', () => {
       
       expect(result.ok).toBe(false);
       expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT));
-      expect(result.errorCode).toBe(ERROR_CODES.UNKNOWN);
+      expect(result.errorCode).toBe(ERROR_CODES.TEXT_TOO_SHORT);
     });
 
     it('should return error when text is empty', async () => {
@@ -61,7 +61,7 @@ describe('summarizeText', () => {
       
       expect(result.ok).toBe(false);
       expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT));
-      expect(result.errorCode).toBe(ERROR_CODES.UNKNOWN);
+      expect(result.errorCode).toBe(ERROR_CODES.TEXT_TOO_SHORT);
     });
 
     it('should return error when text is only whitespace', async () => {
@@ -74,7 +74,7 @@ describe('summarizeText', () => {
       
       expect(result.ok).toBe(false);
       expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT));
-      expect(result.errorCode).toBe(ERROR_CODES.UNKNOWN);
+      expect(result.errorCode).toBe(ERROR_CODES.TEXT_TOO_SHORT);
     });
 
     it('should return error when text is exactly 49 characters', async () => {
@@ -87,7 +87,7 @@ describe('summarizeText', () => {
       
       expect(result.ok).toBe(false);
       expect(result.error).toContain(getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT));
-      expect(result.errorCode).toBe(ERROR_CODES.UNKNOWN);
+      expect(result.errorCode).toBe(ERROR_CODES.TEXT_TOO_SHORT);
     });
 
     it('should accept text that is exactly 50 characters', async () => {

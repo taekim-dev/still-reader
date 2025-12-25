@@ -2,7 +2,7 @@
  * Utility functions for AI summarization service.
  */
 
-import { DEFAULT_MODELS } from './constants';
+import { DEFAULT_MODELS, TRUNCATION_ELLIPSIS } from './constants';
 import { SummarizerResult } from './summarizer';
 
 /**
@@ -15,7 +15,7 @@ export function getDefaultModel(provider: string): string {
 /**
  * Truncate text to maximum length, appending ellipsis if truncated.
  */
-export function truncateText(text: string, maxChars: number, ellipsis: string = '...'): string {
+export function truncateText(text: string, maxChars: number, ellipsis: string = TRUNCATION_ELLIPSIS): string {
   if (text.length <= maxChars) return text;
   return text.substring(0, maxChars) + ellipsis;
 }

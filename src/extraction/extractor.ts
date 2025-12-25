@@ -1,4 +1,4 @@
-import { NAVY_RE } from './constants';
+import { NAVY_RE, SCORING_WEIGHTS, SCORING_THRESHOLDS } from './constants';
 import { isVisible, sanitizeClone } from './domUtils';
 import {
   isNavigation,
@@ -64,7 +64,7 @@ export function extractArticle(document: Document, options: ExtractOptions = {})
 
   // Step 4: Filter by minimum requirements (text length or paragraph count)
   const candidates = scoredCandidates.filter(
-    (c) => c.scores.textLength >= MIN_TEXT_LENGTH || c.scores.paragraphCount >= 2
+    (c) => c.scores.textLength >= MIN_TEXT_LENGTH || c.scores.paragraphCount >= SCORING_THRESHOLDS.MIN_PARAGRAPH_COUNT
   );
 
   // Step 5: Check if we have any viable candidates
@@ -110,13 +110,15 @@ function scoreElement(el: Element): ScoreComponents {
     0,
   );
   const linkRatio = textLength ? linkTextLength / textLength : 0;
-  const headingBonus = el.querySelector('h1,h2') ? 10 : 0;
-  const semanticBoost = el.tagName === 'ARTICLE' || el.tagName === 'MAIN' ? 15 : 0;
-  const navPenalty = NAVY_RE.test(el.className) || NAVY_RE.test(el.id) ? 20 : 0;
-  const densityBonus = paragraphCount >= 5 ? 10 : paragraphCount * 1.5;
-  const linkPenalty = linkRatio * 40;
-  const textScore = textLength / 120;
-  const total = textScore + paragraphCount * 3 + densityBonus + headingBonus + semanticBoost - linkPenalty - navPenalty;
+  const headingBonus = el.querySelector('h1,h2') ? SCORING_WEIGHTS.HEADING_BONUS : 0;
+  const semanticBoost = el.tagName === 'ARTICLE' || el.tagName === 'MAIN' ? SCORING_WEIGHTS.SEMANTIC_BOOST : 0;
+  const navPenalty = NAVY_RE.test(el.className) || NAVY_RE.test(el.id) ? SCORING_WEIGHTS.NAV_PENALTY : 0;
+  const densityBonus = paragraphCount >= SCORING_WEIGHTS.DENSITY_THRESHOLD 
+    ? SCORING_WEIGHTS.DENSITY_BASE_BONUS 
+    : paragraphCount * SCORING_WEIGHTS.DENSITY_MULTIPLIER;
+  const linkPenalty = linkRatio * SCORING_WEIGHTS.LINK_PENALTY_MULTIPLIER;
+  const textScore = textLength / SCORING_WEIGHTS.TEXT_SCORE_DIVISOR;
+  const total = textScore + paragraphCount * SCORING_WEIGHTS.PARAGRAPH_MULTIPLIER + densityBonus + headingBonus + semanticBoost - linkPenalty - navPenalty;
 
   return {
     textLength,
@@ -133,7 +135,7 @@ function scoreElement(el: Element): ScoreComponents {
 }
 
 function normalizeConfidence(score: number): number {
-  return Math.tanh(score / 80);
+  return Math.tanh(score / SCORING_WEIGHTS.CONFIDENCE_NORMALIZER);
 }
 
 /**

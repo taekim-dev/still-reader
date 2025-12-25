@@ -213,7 +213,7 @@ describe('AI Summarization Integration Tests', () => {
       // Step 4: Verify error response
       expect(response.ok).toBe(false);
       expect(response.error).toContain(getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT));
-      expect(response.errorCode).toBe(ERROR_CODES.UNKNOWN);
+      expect(response.errorCode).toBe(ERROR_CODES.TEXT_TOO_SHORT);
       expect(response.summary).toBeUndefined();
 
       // Verify no API call was made

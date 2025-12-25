@@ -22,6 +22,7 @@ import {
   USER_PROMPT_PREFIX,
 } from './constants';
 import { ERROR_CODES, getUserFriendlyMessage, ERROR_PREFIXES } from './errorMessages';
+import { HTTP_HEADERS, HTTP_HEADER_VALUES, API_PATHS } from './httpConstants';
 import { getDefaultModel, truncateText, classifyError } from './utils';
 
 export interface SummarizerConfig {
@@ -36,7 +37,7 @@ export interface SummarizerResult {
   ok: boolean;
   summary?: string;
   error?: string;
-  errorCode?: 'no_api_key' | 'api_error' | 'network_error' | 'timeout' | 'unknown';
+  errorCode?: 'no_api_key' | 'text_too_short' | 'api_error' | 'network_error' | 'timeout' | 'unknown';
 }
 
 /**
@@ -61,7 +62,7 @@ export async function summarizeText(
     return {
       ok: false,
       error: getUserFriendlyMessage(ERROR_CODES.TEXT_TOO_SHORT),
-      errorCode: ERROR_CODES.UNKNOWN,
+      errorCode: ERROR_CODES.TEXT_TOO_SHORT,
     };
   }
 
@@ -136,8 +137,8 @@ async function callGroqAPI(text: string, apiKey: string, model: string, maxToken
   const response = await fetch(API_ENDPOINTS.groq, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      [HTTP_HEADERS.AUTHORIZATION]: `${HTTP_HEADER_VALUES.BEARER_PREFIX}${apiKey}`,
+      [HTTP_HEADERS.CONTENT_TYPE]: HTTP_HEADER_VALUES.APPLICATION_JSON,
     },
     body: JSON.stringify({
       model,
@@ -172,8 +173,8 @@ async function callOpenAIAPI(text: string, apiKey: string, model: string, maxTok
   const response = await fetch(API_ENDPOINTS.openai, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      [HTTP_HEADERS.AUTHORIZATION]: `${HTTP_HEADER_VALUES.BEARER_PREFIX}${apiKey}`,
+      [HTTP_HEADERS.CONTENT_TYPE]: HTTP_HEADER_VALUES.APPLICATION_JSON,
     },
     body: JSON.stringify({
       model,
@@ -208,9 +209,9 @@ async function callAnthropicAPI(text: string, apiKey: string, model: string, max
   const response = await fetch(API_ENDPOINTS.anthropic, {
     method: 'POST',
     headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': ANTHROPIC_VERSION,
-      'Content-Type': 'application/json',
+      [HTTP_HEADERS.X_API_KEY]: apiKey,
+      [HTTP_HEADERS.ANTHROPIC_VERSION]: ANTHROPIC_VERSION,
+      [HTTP_HEADERS.CONTENT_TYPE]: HTTP_HEADER_VALUES.APPLICATION_JSON,
     },
     body: JSON.stringify({
       model,
@@ -240,7 +241,7 @@ async function callGeminiAPI(text: string, apiKey: string, model: string, maxTok
   const response = await fetch(API_ENDPOINTS.gemini(model, apiKey), {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      [HTTP_HEADERS.CONTENT_TYPE]: HTTP_HEADER_VALUES.APPLICATION_JSON,
     },
     body: JSON.stringify({
       contents: [
@@ -278,11 +279,11 @@ async function callCustomAPI(
   model: string,
   maxTokens: number
 ): Promise<string> {
-  const response = await fetch(`${apiBaseUrl}/v1/chat/completions`, {
+  const response = await fetch(`${apiBaseUrl}${API_PATHS.CHAT_COMPLETIONS}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      [HTTP_HEADERS.AUTHORIZATION]: `${HTTP_HEADER_VALUES.BEARER_PREFIX}${apiKey}`,
+      [HTTP_HEADERS.CONTENT_TYPE]: HTTP_HEADER_VALUES.APPLICATION_JSON,
     },
     body: JSON.stringify({
       model,

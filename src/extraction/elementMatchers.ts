@@ -3,6 +3,8 @@
  * These functions use pattern matching to work across different websites.
  */
 
+import { SCORING_THRESHOLDS } from './constants';
+
 /**
  * Check if an element is a navigation element.
  */
@@ -72,7 +74,7 @@ export function isRelatedContent(el: Element): boolean {
   }
 
   const hasRelatedHeading = /^(guides?|related|recommended|you may also|read more|similar)/i.test(text.trim().substring(0, 50));
-  if (hasRelatedHeading && linkCount > 5 && paragraphCount < linkCount && linkCount > paragraphCount * 2) {
+  if (hasRelatedHeading && linkCount > SCORING_THRESHOLDS.MIN_RELATED_LINK_COUNT && paragraphCount < linkCount && linkCount > paragraphCount * SCORING_THRESHOLDS.RELATED_LINK_RATIO) {
     return true;
   }
 

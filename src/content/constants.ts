@@ -118,3 +118,14 @@ export const SUMMARY_MESSAGES = {
   CONFIGURE_LINK_TEXT: 'Configure AI Settings',
 } as const;
 
+export const SUMMARY_STYLES = {
+  margin: 24,
+  borderRadius: 8,
+  headerPadding: {
+    vertical: 12,
+    horizontal: 16,
+  },
+  actionsGap: 6,
+  contentPadding: 16,
+} as const;
+

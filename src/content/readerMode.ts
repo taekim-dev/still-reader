@@ -7,8 +7,10 @@ import {
   ELEMENT_IDS,
   FONT_SCALE,
   SUMMARY_MESSAGES,
+  SUMMARY_STYLES,
   TYPOGRAPHY,
 } from './constants';
+import { escapeHtml } from './htmlUtils';
 import {
   getBackgroundColorVarRef,
   getForegroundColorVarRef,
@@ -349,9 +351,9 @@ export function generateStyles(theme: Theme, fontScale: number): string {
       border-color: ${themeColors.buttonHover};
     }
     .sr-summary {
-      margin: 24px 0;
+      margin: ${SUMMARY_STYLES.margin}px 0;
       border: 1px solid ${themeColors.border};
-      border-radius: 8px;
+      border-radius: ${SUMMARY_STYLES.borderRadius}px;
       background: ${bgColorVar};
       overflow: hidden;
     }
@@ -359,7 +361,7 @@ export function generateStyles(theme: Theme, fontScale: number): string {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 16px;
+      padding: ${SUMMARY_STYLES.headerPadding.vertical}px ${SUMMARY_STYLES.headerPadding.horizontal}px;
       border-bottom: 1px solid ${themeColors.border};
       background: ${bgColorVar};
     }
@@ -370,7 +372,7 @@ export function generateStyles(theme: Theme, fontScale: number): string {
     }
     .sr-summary-actions {
       display: flex;
-      gap: 6px;
+      gap: ${SUMMARY_STYLES.actionsGap}px;
       align-items: center;
     }
     .sr-icon-button {
@@ -422,7 +424,7 @@ export function generateStyles(theme: Theme, fontScale: number): string {
       border-bottom: 0.5em solid currentColor;
     }
     #${ELEMENT_IDS.SUMMARY_CONTENT} {
-      padding: 16px;
+      padding: ${SUMMARY_STYLES.contentPadding}px;
       line-height: 1.6;
     }
     .sr-summary.collapsed #${ELEMENT_IDS.SUMMARY_CONTENT} {
@@ -492,24 +494,6 @@ function buildReaderShell(content: ReaderContent): string {
   return `${head}${body}`;
 }
 
-function escapeHtml(input: string): string {
-  return input.replace(/[&<>"']/g, (char) => {
-    switch (char) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
-      case '>':
-        return '&gt;';
-      case '"':
-        return '&quot;';
-      case "'":
-        return '&#39;';
-      default:
-        return char;
-    }
-  });
-}
 
 /**
  * Update font scale CSS variable.

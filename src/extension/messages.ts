@@ -26,7 +26,7 @@ export interface SummarizeResponse {
   ok: boolean;
   summary?: string;
   error?: string;
-  errorCode?: 'no_api_key' | 'api_error' | 'network_error' | 'timeout' | 'unknown';
+  errorCode?: 'no_api_key' | 'text_too_short' | 'api_error' | 'network_error' | 'timeout' | 'unknown';
 }
 
 // Background service worker messages

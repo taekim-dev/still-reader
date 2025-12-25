@@ -1,6 +1,6 @@
 import { extractArticle } from '../extraction/extractor';
 
-import { ELEMENT_IDS, NOTICE_STYLES } from './constants';
+import { DEFAULT_TITLE, ELEMENT_IDS, NOTICE_STYLES } from './constants';
 import { activateReader, deactivateReader, isReaderActive, ReaderContent } from './readerMode';
 
 export interface ActivationOptions {
@@ -28,7 +28,7 @@ export function activateReaderMode(document: Document, options: ActivationOption
   }
 
   const { html, text, confidence } = extraction;
-  const title = document.title || 'Reader';
+  const title = document.title || DEFAULT_TITLE;
 
   const result = activateReader(document, {
     html,
