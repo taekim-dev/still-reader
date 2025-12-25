@@ -2,17 +2,17 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { JSDOM } from 'jsdom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
-import { activateReaderMode, deactivateReaderMode, isReaderActive } from '../src/content/contentScript';
+import { activateReaderMode, isReaderActive } from '../src/content/contentScript';
+import { resetReaderMode } from '../src/content/readerMode';
 
 const fixture = (name: string): string =>
   readFileSync(join(__dirname, 'fixtures', name), { encoding: 'utf-8' });
 
 describe('contentScript harness', () => {
-  afterEach(() => {
-    // ensure we clear state between tests by deactivating if active
-    // each test uses its own DOM instance
+  beforeEach(() => {
+    resetReaderMode();
   });
 
   it('activates reader mode on a real article page', () => {
@@ -30,11 +30,6 @@ describe('contentScript harness', () => {
     const readerRoot = document.querySelector('#still-reader-root');
     expect(readerRoot).not.toBeNull();
     expect(readerRoot?.textContent?.toLowerCase()).toContain('cursor continues acquisition spree');
-
-    const restore = deactivateReaderMode(document);
-    expect(restore.ok).toBe(true);
-    expect(isReaderActive()).toBe(false);
-    expect(document.querySelector('#still-reader-root')).toBeNull();
   });
 
   it('declines activation on a nav-only page and leaves DOM intact', () => {

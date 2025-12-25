@@ -84,27 +84,37 @@ export function createReaderMode(initialState?: {
       return { ok: true, reason: 'not_active' };
     }
 
-    document.documentElement.innerHTML = originalPage.html;
     try {
-      const scrollToFn = document.defaultView?.scrollTo;
-      const isJsdom = !!document.defaultView?.navigator?.userAgent?.includes('jsdom');
-      const isStub = scrollToFn && /Not implemented/i.test(String(scrollToFn));
-      const allowCustom = (scrollToFn as unknown as { __ALLOW_SCROLL__?: boolean })?.__ALLOW_SCROLL__ === true;
-      if (scrollToFn && (allowCustom || (!isStub && !isJsdom))) {
-        scrollToFn.call(document.defaultView, originalPage.scrollX, originalPage.scrollY);
-      }
-    } catch {
-      // ignore scroll restore errors
+      const scrollData = {
+        x: originalPage.scrollX,
+        y: originalPage.scrollY,
+        url: document.defaultView?.location.href ?? window.location.href,
+      };
+      sessionStorage.setItem('still-reader-scroll-restore', JSON.stringify(scrollData));
+    } catch (error) {
+      console.warn('Failed to save scroll position:', error);
     }
 
     isActive = false;
     originalPage = null;
     config = null;
+
+    try {
+      window.location.reload();
+    } catch (error) {
+      // Ignore reload errors (e.g., in test environments)
+    }
     return { ok: true };
   }
 
   function isReaderActive(): boolean {
     return isActive;
+  }
+
+  function resetReaderMode(): void {
+    isActive = false;
+    originalPage = null;
+    config = null;
   }
 
   function changeTheme(document: Document, theme: 'light' | 'dark'): { ok: boolean; reason?: string } {
@@ -254,6 +264,7 @@ export function createReaderMode(initialState?: {
     activateReader,
     deactivateReader,
     isReaderActive,
+    resetReaderMode,
     changeTheme,
     showSummary,
     hideSummary,
@@ -269,6 +280,7 @@ const readerMode = createReaderMode();
 export const activateReader = readerMode.activateReader;
 export const deactivateReader = readerMode.deactivateReader;
 export const isReaderActive = readerMode.isReaderActive;
+export const resetReaderMode = readerMode.resetReaderMode;
 export const changeTheme = readerMode.changeTheme;
 export const showSummary = readerMode.showSummary;
 export const hideSummary = readerMode.hideSummary;

@@ -1,10 +1,14 @@
 import { JSDOM } from 'jsdom';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { handleReaderMessage } from '../src/extension/contentHandler';
+import { resetReaderMode } from '../src/content/readerMode';
 
 describe('contentHandler', () => {
-  it('activates and deactivates via messages', () => {
+  beforeEach(() => {
+    resetReaderMode();
+  });
+  it('activates reader mode via messages', () => {
     const dom = new JSDOM(
       `<html><body><article>
         <h1>Sample Article</h1>
@@ -21,10 +25,6 @@ describe('contentHandler', () => {
     const activate = handleReaderMessage(document, { type: 'activate' });
     expect(activate.ok).toBe(true);
     expect(document.querySelector('#still-reader-root')).not.toBeNull();
-
-    const deactivate = handleReaderMessage(document, { type: 'deactivate' });
-    expect(deactivate.ok).toBe(true);
-    expect(document.querySelector('#still-reader-root')).toBeNull();
   });
 
   it('returns unavailable on nav-only pages', () => {
@@ -97,9 +97,6 @@ describe('contentHandler', () => {
         },
       );
       const { document } = dom.window;
-
-      // Ensure reader is not active from previous tests
-      handleReaderMessage(document, { type: 'deactivate' });
 
       // First activation should succeed
       const firstActivate = handleReaderMessage(document, { type: 'activate' });

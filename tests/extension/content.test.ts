@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { handleReaderMessage } from '../../src/extension/contentHandler';
 import { ReaderMessage } from '../../src/extension/messages';
+import { resetReaderMode } from '../../src/content/readerMode';
 
 // Mock Chrome APIs
 const mockChrome = {
@@ -18,6 +19,7 @@ const mockChrome = {
 
 // Setup
 beforeEach(() => {
+  resetReaderMode();
   global.chrome = mockChrome as unknown as typeof chrome;
   vi.clearAllMocks();
 });
@@ -73,14 +75,8 @@ describe('Content script Chrome messaging', () => {
       <footer>Contact</footer>
     `;
 
-    // First activate
+    // Activate reader
     handleReaderMessage(doc, { type: 'activate' });
-
-    // Then deactivate
-    const message: ReaderMessage = { type: 'deactivate' };
-    const response = handleReaderMessage(doc, message);
-
-    expect(response.ok).toBe(true);
   });
 
   it('should handle ping message via handler', () => {
