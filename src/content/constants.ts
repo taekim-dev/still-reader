@@ -115,5 +115,6 @@ export const SUMMARY_MESSAGES = {
   CLOSE: 'Close summary',
   GENERATING: 'Generating summary...',
   NOT_CONFIGURED: 'AI summarization is not configured. Please add an API key in extension settings.',
+  CONFIGURE_LINK_TEXT: 'Configure AI Settings',
 } as const;
 

@@ -29,3 +29,11 @@ export interface SummarizeResponse {
   errorCode?: 'no_api_key' | 'api_error' | 'network_error' | 'timeout' | 'unknown';
 }
 
+// Background service worker messages
+export type BackgroundMessage = 
+  | { type: 'openOptionsPage' };
+
+export interface BackgroundResponse {
+  ok: boolean;
+}
+

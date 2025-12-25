@@ -6,13 +6,13 @@
 import { JSDOM } from 'jsdom';
 import { describe, it, expect, beforeEach } from 'vitest';
 
+import { CSS_VARIABLES, ELEMENT_IDS } from '../../src/content/constants';
 import {
   applyThemeToBody,
   applyThemeToButtons,
   applyThemeToControls,
   updateFontScale,
 } from '../../src/content/readerMode';
-import { CSS_VARIABLES, ELEMENT_IDS } from '../../src/content/constants';
 import { getBackgroundColorVarRef, getForegroundColorVarRef, getThemeColors } from '../../src/content/themeUtils';
 
 const basePage = `

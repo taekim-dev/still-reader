@@ -113,21 +113,35 @@
       border-top: 1px solid #eee;
     }
 
-    .summary-content {
-      margin-top: 8px;
-      padding: 12px;
-      background: #f9f9f9;
-      border-radius: 6px;
-      font-size: 13px;
-      line-height: 1.5;
-      color: #555;
-      max-height: 200px;
-      overflow-y: auto;
+    .summary-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
     }
 
-    .summary-content.loading {
-      color: #999;
-      font-style: italic;
+    .summary-controls .btn-secondary {
+      flex: 1;
+    }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      line-height: 1;
+      background: #f0f0f0;
+      color: #333;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-icon:hover:not(:disabled) {
+      background: #e0e0e0;
     }
 
     .settings-link {
@@ -157,9 +171,10 @@
         <button id="theme-toggle" class="btn-secondary" disabled>Theme</button>
       </div>
       <div class="summary-section">
-        <button id="summarize" class="btn-secondary" disabled>Summarize</button>
-        <a href="#" id="settings-link" class="settings-link">⚙️ Configure AI Settings</a>
-        <div id="summary-content" class="summary-content" style="display: none;"></div>
+        <div class="summary-controls">
+          <button id="summarize" class="btn-secondary">Summarize</button>
+          <button id="settings-btn" class="btn-icon" aria-label="Configure AI Settings" title="Configure AI Settings">⚙️</button>
+        </div>
       </div>
     </div>
   </div>

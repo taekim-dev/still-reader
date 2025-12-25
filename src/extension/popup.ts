@@ -3,8 +3,8 @@
  * the content script via Chrome messaging.
  */
 
-import { ERROR_CODES, USER_MESSAGES, formatErrorMessage, getUserFriendlyMessage } from './errorMessages';
-import { ReaderMessage, ReaderResponse, SummarizeMessage, SummarizeResponse } from './messages';
+import { ERROR_CODES, USER_MESSAGES, formatErrorMessage } from './errorMessages';
+import { ReaderMessage, ReaderResponse } from './messages';
 import { getThemePreference, saveThemePreference } from './storage';
 
 // UI elements
@@ -15,8 +15,7 @@ const fontDecBtn = document.getElementById('font-dec') as HTMLButtonElement;
 const fontIncBtn = document.getElementById('font-inc') as HTMLButtonElement;
 const themeToggleBtn = document.getElementById('theme-toggle') as HTMLButtonElement;
 const summarizeBtn = document.getElementById('summarize') as HTMLButtonElement;
-const summaryContentEl = document.getElementById('summary-content') as HTMLElement;
-const settingsLink = document.getElementById('settings-link') as HTMLAnchorElement;
+const settingsBtn = document.getElementById('settings-btn') as HTMLButtonElement;
 
 let currentTabId: number | null = null;
 let currentTheme: 'light' | 'dark' = 'light';
@@ -70,7 +69,7 @@ function updateUI(active: boolean): void {
   fontDecBtn.disabled = !active;
   fontIncBtn.disabled = !active;
   themeToggleBtn.disabled = !active;
-  summarizeBtn.disabled = !active;
+  // Summarize button is always enabled - it will auto-activate reader if needed
 }
 
 async function sendMessage(message: ReaderMessage): Promise<ReaderResponse> {
@@ -142,7 +141,6 @@ deactivateBtn.addEventListener('click', async () => {
     if (deactivateResponse.ok) {
       setStatus(USER_MESSAGES.READER_DEACTIVATED, 'success');
       updateUI(false);
-      summaryContentEl.style.display = 'none';
     } else {
       // Log technical reason for debugging
       console.warn('Deactivation failed:', deactivateResponse.reason);
@@ -191,65 +189,53 @@ themeToggleBtn.addEventListener('click', async () => {
 
 summarizeBtn.addEventListener('click', async () => {
   try {
-    setStatus('Generating summary...', 'info');
-    summaryContentEl.style.display = 'block';
-    summaryContentEl.textContent = 'Loading...';
-    summaryContentEl.className = 'summary-content loading';
+    setStatus('Preparing summary...', 'info');
 
-    // Step 1: Get article text from content script (independent of reader mode)
-    let text: string;
-    try {
-      const textResponse = await sendMessage({ type: 'getArticleText' });
-      if (!textResponse.ok || !textResponse.articleText) {
-        // Log technical reason for debugging
-        console.warn('Failed to get article text:', textResponse.reason);
-        const userMessage = getUserFriendlyMessage(textResponse.reason);
-        throw new Error(userMessage);
+    // Step 1: Check if reader is active, if not, activate it first
+    const pingResponse = await sendMessage({ type: 'ping' });
+    const isReaderActive = pingResponse.active ?? false;
+
+    if (!isReaderActive) {
+      setStatus('Activating reader mode...', 'info');
+      const theme = await getThemePreference();
+      const activateResponse = await sendMessage({
+        type: 'activate',
+        options: { theme },
+      });
+
+      if (!activateResponse.ok) {
+        setStatus(formatErrorMessage(activateResponse.reason), 'error');
+        return;
       }
-      text = textResponse.articleText;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : getUserFriendlyMessage(ERROR_CODES.UNKNOWN);
-      summaryContentEl.textContent = `${USER_MESSAGES.FAILED_TO_GET_ARTICLE_TEXT}: ${errorMessage}`;
-      summaryContentEl.className = 'summary-content';
-      setStatus(USER_MESSAGES.FAILED_TO_GET_ARTICLE_TEXT, 'error');
-      return;
+      updateUI(true);
     }
 
-    // Step 2: Send to background worker for summarization (graceful degradation)
-    const summarizeMessage: SummarizeMessage = {
-      type: 'summarize',
-      text,
-    };
+    // Step 2: Send summarize message to content script (will show in reader mode)
+    setStatus('Generating summary...', 'info');
+    const summarizeResponse = await sendMessage({ type: 'summarize' });
 
-    const response = (await chrome.runtime.sendMessage(summarizeMessage)) as SummarizeResponse;
-
-    if (response.ok && response.summary) {
-      summaryContentEl.textContent = response.summary;
-      summaryContentEl.className = 'summary-content';
-      setStatus('Summary generated', 'success');
+    if (summarizeResponse.ok) {
+      setStatus('Summary will appear in reader mode', 'success');
     } else {
-      // Graceful error handling - show helpful message
-      const errorMsg = response.error ?? 'Unknown error';
-      const isNotConfigured = response.errorCode === 'no_api_key';
+      // Handle errors - show message with link to settings if not configured
+      const errorMsg = summarizeResponse.reason ?? 'Unknown error';
+      const isNotConfigured = errorMsg === 'no_api_key' || errorMsg.includes('not configured');
       
-      summaryContentEl.textContent = isNotConfigured
-        ? 'AI summarization is not configured. Please add an API key in extension settings.'
-        : `Error: ${errorMsg}`;
-      summaryContentEl.className = 'summary-content';
-      setStatus(isNotConfigured ? 'AI not configured' : 'Summary failed', 'error');
+      if (isNotConfigured) {
+        setStatus('AI not configured. Click "Configure AI Settings" below.', 'error');
+      } else {
+        setStatus(`Summary failed: ${formatErrorMessage(errorMsg)}`, 'error');
+      }
     }
   } catch (error) {
-    // Graceful error handling - don't break the app
-    summaryContentEl.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    summaryContentEl.className = 'summary-content';
-    setStatus('Summary failed', 'error');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    setStatus(`Summary failed: ${errorMessage}`, 'error');
     console.error('Summarize error:', error);
   }
 });
 
-// Settings link
-settingsLink.addEventListener('click', (e) => {
-  e.preventDefault();
+// Settings button
+settingsBtn.addEventListener('click', () => {
   chrome.runtime.openOptionsPage();
 });
 

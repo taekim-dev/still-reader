@@ -1,6 +1,6 @@
-import { resolve } from 'node:path';
-import { copyFileSync, mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { copyFileSync, mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
@@ -95,7 +95,7 @@ function inlineDependencies(entryName: string): Plugin {
         if (entryName === 'background.js') {
           // Only delete chunks that were inlined into background.js
           // settings.js will use the chunk file directly
-          inlinedChunks.forEach((chunkName) => {
+          inlinedChunks.forEach(() => {
             // Only delete if it was actually inlined (check if it's still in bundle)
             // Actually, don't delete at all - let settings.js use the chunk file
           });
@@ -295,7 +295,7 @@ export default defineConfig({
         manualChunks: undefined, // Let Vite decide chunking
       },
       // Don't inline dependencies for settings.js - let it use the chunk file
-      external: (id) => {
+      external: () => {
         // Don't externalize anything - we want to inline for background.js but not for settings.js
         return false;
       },

@@ -8,7 +8,7 @@
 
 import { summarizeText } from '../ai/summarizer';
 
-import { SummarizeMessage, SummarizeResponse } from './messages';
+import { BackgroundMessage, BackgroundResponse, SummarizeMessage, SummarizeResponse } from './messages';
 import { getAIConfig, getThemePreference } from './storage';
 
 // Listen for keyboard shortcuts
@@ -50,11 +50,11 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-// Listen for summarize requests from popup
+// Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener(
-  (message: SummarizeMessage, _sender: chrome.runtime.MessageSender, sendResponse: (response: SummarizeResponse) => void) => {
+  (message: SummarizeMessage | BackgroundMessage, _sender: chrome.runtime.MessageSender, sendResponse: (response: SummarizeResponse | BackgroundResponse) => void) => {
     if (message.type === 'summarize') {
-      handleSummarize(message.text)
+      handleSummarize((message as SummarizeMessage).text)
         .then((result) => {
           sendResponse(result);
         })
@@ -68,6 +68,13 @@ chrome.runtime.onMessage.addListener(
         });
       return true; // Keep channel open for async response
     }
+    
+    if (message.type === 'openOptionsPage') {
+      chrome.runtime.openOptionsPage();
+      sendResponse({ ok: true });
+      return false;
+    }
+    
     return false;
   }
 );

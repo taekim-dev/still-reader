@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 
+import { COLORS, CSS_VARIABLES } from '../../src/content/constants';
 import {
   getBackgroundColorVar,
   getBackgroundColorVarRef,
@@ -12,7 +13,6 @@ import {
   getForegroundColorVarRef,
   getThemeColors,
 } from '../../src/content/themeUtils';
-import { COLORS, CSS_VARIABLES } from '../../src/content/constants';
 
 describe('themeUtils', () => {
   describe('getThemeColors', () => {

@@ -107,10 +107,28 @@ async function handleSummarizeRequest(document: Document): Promise<void> {
     } else {
       const errorMsg = response.error ?? 'Unknown error';
       const isNotConfigured = response.errorCode === 'no_api_key';
-      showSummary(
-        document,
-        isNotConfigured ? SUMMARY_MESSAGES.NOT_CONFIGURED : `Error: ${errorMsg}`
-      );
+      
+      if (isNotConfigured) {
+        // Show error with clickable link to settings
+        const linkId = 'sr-settings-link';
+        const errorHtml = `${SUMMARY_MESSAGES.NOT_CONFIGURED} <a href="#" id="${linkId}" style="color: #0066cc; text-decoration: underline; cursor: pointer; margin-left: 4px;">${SUMMARY_MESSAGES.CONFIGURE_LINK_TEXT}</a>`;
+        showSummary(document, errorHtml, true);
+        
+        // Add click handler to open options page via background script
+        const linkEl = document.getElementById(linkId);
+        if (linkEl) {
+          linkEl.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+              await chrome.runtime.sendMessage({ type: 'openOptionsPage' });
+            } catch (error) {
+              console.error('Failed to open options page:', error);
+            }
+          });
+        }
+      } else {
+        showSummary(document, `Error: ${errorMsg}`);
+      }
     }
   } catch (error) {
     showSummary(

@@ -195,12 +195,16 @@ export function createReaderMode(initialState?: {
     deactivateReader(document);
   }
 
-  function showSummary(document: Document, summary: string): void {
+  function showSummary(document: Document, summary: string, isHtml: boolean = false): void {
     const summaryEl = document.getElementById(ELEMENT_IDS.SUMMARY);
     const contentEl = document.getElementById(ELEMENT_IDS.SUMMARY_CONTENT);
     if (!summaryEl || !contentEl) return;
 
-    contentEl.textContent = summary;
+    if (isHtml) {
+      contentEl.innerHTML = summary;
+    } else {
+      contentEl.textContent = summary;
+    }
     summaryEl.style.display = 'block';
     summaryEl.classList.remove('collapsed');
     updateSummaryToggleButton(document);
@@ -231,8 +235,8 @@ export function createReaderMode(initialState?: {
     const toggleBtn = document.getElementById(ELEMENT_IDS.SUMMARY_TOGGLE);
     const summaryEl = document.getElementById(ELEMENT_IDS.SUMMARY);
     if (!toggleBtn || !summaryEl) return;
-    // Update icon: ▼ for collapse (down), ▲ for expand (up)
-    toggleBtn.textContent = summaryEl.classList.contains('collapsed') ? '▲' : '▼';
+    // Icon is handled by CSS (::before pseudo-element)
+    // Just update aria-label
     toggleBtn.setAttribute(
       'aria-label',
       summaryEl.classList.contains('collapsed') ? SUMMARY_MESSAGES.EXPAND : SUMMARY_MESSAGES.COLLAPSE
@@ -399,6 +403,23 @@ export function generateStyles(theme: Theme, fontScale: number): string {
     #${ELEMENT_IDS.SUMMARY_TOGGLE} {
       font-size: 1.1em;
       font-weight: 500;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #${ELEMENT_IDS.SUMMARY_TOGGLE}::before {
+      content: '';
+      width: 0;
+      height: 0;
+      border-left: 0.4em solid transparent;
+      border-right: 0.4em solid transparent;
+      border-top: 0.5em solid currentColor;
+      transition: transform 0.2s;
+    }
+    .sr-summary.collapsed #${ELEMENT_IDS.SUMMARY_TOGGLE}::before {
+      border-top: none;
+      border-bottom: 0.5em solid currentColor;
     }
     #${ELEMENT_IDS.SUMMARY_CONTENT} {
       padding: 16px;
@@ -445,7 +466,7 @@ export function generateBody(title: string | undefined, html: string, theme: The
       <div id="${ELEMENT_IDS.SUMMARY_HEADER}" class="sr-summary-header">
         <h2>${SUMMARY_MESSAGES.TITLE}</h2>
         <div class="sr-summary-actions">
-          <button id="${ELEMENT_IDS.SUMMARY_TOGGLE}" aria-label="${SUMMARY_MESSAGES.COLLAPSE}" class="sr-icon-button">▼</button>
+          <button id="${ELEMENT_IDS.SUMMARY_TOGGLE}" aria-label="${SUMMARY_MESSAGES.COLLAPSE}" class="sr-icon-button"></button>
         </div>
       </div>
       <div id="${ELEMENT_IDS.SUMMARY_CONTENT}" class="sr-summary-content"></div>

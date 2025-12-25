@@ -5,8 +5,8 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { generateStyles, generateHead, generateBody } from '../../src/content/readerMode';
 import { CSS_VARIABLES, ELEMENT_IDS } from '../../src/content/constants';
+import { generateStyles, generateHead, generateBody } from '../../src/content/readerMode';
 
 describe('generateStyles', () => {
   it('should generate CSS with light theme', () => {

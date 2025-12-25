@@ -333,22 +333,24 @@ describe('readerMode', () => {
       const summaryEl = document.getElementById('still-reader-summary');
       const toggleBtn = document.getElementById('sr-summary-toggle');
 
-      // Initially expanded (▼ icon)
+      // Initially expanded (chevron down via CSS)
       expect(summaryEl?.classList.contains('collapsed')).toBe(false);
-      expect(toggleBtn?.textContent).toBe('▼');
       expect(toggleBtn?.getAttribute('aria-label')).toBe('Collapse summary');
+      // Icon is now CSS-based, so textContent is empty
+      expect(toggleBtn?.textContent).toBe('');
 
       // Collapse
       toggleSummaryCollapse(document);
       expect(summaryEl?.classList.contains('collapsed')).toBe(true);
-      expect(toggleBtn?.textContent).toBe('▲');
       expect(toggleBtn?.getAttribute('aria-label')).toBe('Expand summary');
+      // Icon is still CSS-based
+      expect(toggleBtn?.textContent).toBe('');
 
       // Expand again
       toggleSummaryCollapse(document);
       expect(summaryEl?.classList.contains('collapsed')).toBe(false);
-      expect(toggleBtn?.textContent).toBe('▼');
       expect(toggleBtn?.getAttribute('aria-label')).toBe('Collapse summary');
+      expect(toggleBtn?.textContent).toBe('');
 
       deactivateReader(document);
     });
