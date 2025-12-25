@@ -369,6 +369,7 @@ export function generateStyles(theme: Theme, fontScale: number): string {
       margin: 0;
       font-size: 1.1em;
       font-weight: 600;
+      color: ${fgColorVar};
     }
     .sr-summary-actions {
       display: flex;
@@ -392,6 +393,9 @@ export function generateStyles(theme: Theme, fontScale: number): string {
       transition: all 0.2s ease;
       opacity: 0.85;
     }
+    #${ELEMENT_IDS.SUMMARY_TOGGLE}.sr-icon-button {
+      opacity: 1;
+    }
     .sr-icon-button:hover {
       opacity: 1;
       background: ${themeColors.border};
@@ -409,23 +413,28 @@ export function generateStyles(theme: Theme, fontScale: number): string {
       display: flex;
       align-items: center;
       justify-content: center;
+      color: ${fgColorVar};
+      opacity: 1;
     }
     #${ELEMENT_IDS.SUMMARY_TOGGLE}::before {
       content: '';
       width: 0;
       height: 0;
-      border-left: 0.4em solid transparent;
-      border-right: 0.4em solid transparent;
-      border-top: 0.5em solid currentColor;
+      border-left: 0.55em solid transparent;
+      border-right: 0.55em solid transparent;
+      border-top: 0.7em solid ${fgColorVar};
       transition: transform 0.2s;
+      display: block;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
     }
     .sr-summary.collapsed #${ELEMENT_IDS.SUMMARY_TOGGLE}::before {
       border-top: none;
-      border-bottom: 0.5em solid currentColor;
+      border-bottom: 0.7em solid ${fgColorVar};
     }
     #${ELEMENT_IDS.SUMMARY_CONTENT} {
       padding: ${SUMMARY_STYLES.contentPadding}px;
       line-height: 1.6;
+      color: ${fgColorVar};
     }
     .sr-summary.collapsed #${ELEMENT_IDS.SUMMARY_CONTENT} {
       display: none;
@@ -545,6 +554,44 @@ export function applyThemeToButtons(document: Document, theme: Theme): void {
 }
 
 /**
+ * Apply theme styles to summary section.
+ * @internal - Exported for testing
+ */
+export function applyThemeToSummary(document: Document, theme: Theme): void {
+  const themeColors = getThemeColors(theme);
+  const bgColor = getBackgroundColorVarRef(theme);
+  const fgColor = getForegroundColorVarRef(theme);
+  
+  const summaryEl = document.getElementById(ELEMENT_IDS.SUMMARY);
+  const headerEl = document.getElementById(ELEMENT_IDS.SUMMARY_HEADER);
+  const contentEl = document.getElementById(ELEMENT_IDS.SUMMARY_CONTENT);
+  const headerTitle = headerEl?.querySelector('h2');
+  
+  if (summaryEl) {
+    (summaryEl as HTMLElement).style.background = bgColor;
+    (summaryEl as HTMLElement).style.borderColor = themeColors.border;
+  }
+  
+  if (headerEl) {
+    (headerEl as HTMLElement).style.background = bgColor;
+    (headerEl as HTMLElement).style.borderBottomColor = themeColors.border;
+  }
+  
+  if (headerTitle) {
+    (headerTitle as HTMLElement).style.color = fgColor;
+  }
+  
+  if (contentEl) {
+    (contentEl as HTMLElement).style.color = fgColor;
+  }
+  
+  const toggleBtn = document.getElementById(ELEMENT_IDS.SUMMARY_TOGGLE);
+  if (toggleBtn) {
+    (toggleBtn as HTMLElement).style.color = fgColor;
+  }
+}
+
+/**
  * Apply reader state to document (font scale and theme).
  */
 function applyState(document: Document, next: ReaderState): void {
@@ -552,6 +599,7 @@ function applyState(document: Document, next: ReaderState): void {
   applyThemeToBody(document, next.theme);
   applyThemeToControls(document, next.theme);
   applyThemeToButtons(document, next.theme);
+  applyThemeToSummary(document, next.theme);
 }
 
 function clampFontScale(value: number): number {
