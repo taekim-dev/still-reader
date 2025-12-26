@@ -18,12 +18,15 @@ A Chrome extension that provides a distraction-free reading experience by extrac
 
 ## Screenshots
 
-<!-- Add screenshots here:
-- Reader mode interface
-- Popup interface
-- Settings page
-- AI summary example
--->
+### Reader Mode with AI Summary
+
+The extension extracts article content and displays it in a clean, distraction-free interface. The AI summary feature provides concise overviews of articles using configurable AI providers.
+
+![Reader Mode - Light Theme](docs/reader-mode-light.webp)
+*Reader mode in light theme displaying article content with AI summary. The popup shows theme and reader controls.*
+
+![Reader Mode - Dark Theme](docs/reader-mode-dark.webp)
+*Reader mode in dark theme with AI summary expanded, showing the extracted article content and extension popup controls.*
 
 ## Tech Stack
 
