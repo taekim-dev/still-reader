@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { getAIConfig, saveAIConfig, clearAIConfig, AIConfig } from '../src/extension/storage';
+import { getAIConfig, saveAIConfig, clearAIConfig, AIConfig } from '../src/extension/storage/aiConfig';
 
 // Mock chrome.storage.sync
 const mockStorage: Record<string, any> = {};

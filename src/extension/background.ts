@@ -9,7 +9,8 @@
 import { summarizeText } from '../ai/summarizer';
 
 import { BackgroundMessage, BackgroundResponse, SummarizeMessage, SummarizeResponse } from './messages';
-import { getAIConfig, getThemePreference } from './storage';
+import { getAIConfig } from './storage/aiConfig';
+import { getThemePreference } from './storage/theme';
 
 // Listen for keyboard shortcuts
 chrome.commands.onCommand.addListener(async (command) => {

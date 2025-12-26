@@ -7,7 +7,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { summarizeText } from '../src/ai/summarizer';
-import { getAIConfig, saveAIConfig, AIConfig, getThemePreference } from '../src/extension/storage';
+import { getAIConfig, saveAIConfig, AIConfig } from '../src/extension/storage/aiConfig';
+import { getThemePreference } from '../src/extension/storage/theme';
 
 // Mock chrome.storage.sync
 const mockStorage: Record<string, any> = {};

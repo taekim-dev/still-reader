@@ -2,7 +2,7 @@
  * Settings page controller. Handles AI configuration UI.
  */
 
-import { AIConfig, getAIConfig, saveAIConfig, clearAIConfig } from './storage';
+import { AIConfig, getAIConfig, saveAIConfig, clearAIConfig } from './storage/aiConfig';
 
 // UI elements - wait for DOM
 let form: HTMLFormElement | null = null;

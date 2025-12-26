@@ -5,7 +5,7 @@
 
 import { ERROR_CODES, USER_MESSAGES, formatErrorMessage } from './errorMessages';
 import { ReaderMessage, ReaderResponse } from './messages';
-import { getThemePreference, saveThemePreference } from './storage';
+import { getThemePreference, saveThemePreference } from './storage/theme';
 
 // UI elements
 const statusEl = document.getElementById('status') as HTMLElement;
