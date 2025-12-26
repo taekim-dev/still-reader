@@ -3,6 +3,8 @@
  */
 
 import { AIConfig, getAIConfig, saveAIConfig, clearAIConfig } from './storage/aiConfig';
+import { getElementById } from './ui/elements';
+import { setStatus } from './ui/status';
 
 // UI elements - wait for DOM
 let form: HTMLFormElement | null = null;
@@ -13,12 +15,12 @@ let providerSelect: HTMLSelectElement | null = null;
 let customApiGroup: HTMLElement | null = null;
 
 function getElements(): void {
-  form = document.getElementById('settings-form') as HTMLFormElement;
-  statusEl = document.getElementById('status') as HTMLElement;
-  saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
-  clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
-  providerSelect = document.getElementById('provider') as HTMLSelectElement;
-  customApiGroup = document.getElementById('custom-api-group') as HTMLElement;
+  form = getElementById<HTMLFormElement>('settings-form');
+  statusEl = getElementById('status');
+  saveBtn = getElementById<HTMLButtonElement>('save-btn');
+  clearBtn = getElementById<HTMLButtonElement>('clear-btn');
+  providerSelect = getElementById<HTMLSelectElement>('provider');
+  customApiGroup = getElementById('custom-api-group');
 
   // Debug: log elements found (disabled for production)
   // Uncomment for debugging:
@@ -73,18 +75,7 @@ async function initSettings(): Promise<void> {
 }
 
 function showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
-  if (!statusEl) {
-    console.error('statusEl is null, cannot show status');
-    return;
-  }
-  statusEl.textContent = message;
-  statusEl.className = `status ${type}`;
-  setTimeout(() => {
-    if (statusEl) {
-      statusEl.className = 'status';
-      statusEl.textContent = '';
-    }
-  }, 5000);
+  setStatus(statusEl, message, type, { autoClear: true, clearAfter: 5000 });
 }
 
 // Save settings - use button click instead of form submit to avoid URL params

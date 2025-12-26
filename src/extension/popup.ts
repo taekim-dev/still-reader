@@ -6,6 +6,7 @@
 import { ERROR_CODES, USER_MESSAGES, formatErrorMessage } from './errorMessages';
 import { ReaderMessage, ReaderResponse } from './messages';
 import { getThemePreference, saveThemePreference } from './storage/theme';
+import { setStatus as setStatusUtil } from './ui/status';
 
 // UI elements
 const statusEl = document.getElementById('status') as HTMLElement;
@@ -59,8 +60,7 @@ function updateThemeButtonLabel(): void {
 }
 
 function setStatus(message: string, type: 'info' | 'success' | 'error' = 'info'): void {
-  statusEl.textContent = message;
-  statusEl.className = `status ${type}`;
+  setStatusUtil(statusEl, message, type);
 }
 
 function updateUI(active: boolean): void {
