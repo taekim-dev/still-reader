@@ -4,13 +4,6 @@ import { changeTheme } from '../content/readerMode';
 import { handleSummarizeRequest } from './handlers/summarizeHandler';
 import { ReaderMessage, ReaderResponse } from './messages';
 
-/**
- * Handle a reader message. This is structured for direct testing; the Chrome
- * runtime wiring will call this from the content script entrypoint.
- * 
- * Note: AI-related messages (getArticleText) are handled here but are
- * independent of core reader functionality.
- */
 export function handleReaderMessage(document: Document, message: ReaderMessage): ReaderResponse {
   if (message.type === 'ping') {
     return { ok: true, active: isReaderActive() };
@@ -30,13 +23,9 @@ export function handleReaderMessage(document: Document, message: ReaderMessage):
   }
 
   if (message.type === 'toggle-reader') {
-    // Check if reader is active and toggle
     if (isReaderActive()) {
       return deactivateReaderMode(document);
     } else {
-      // Load theme preference for activation
-      // Note: This is async but we can't make handleReaderMessage async easily
-      // For now, use default theme - user can change via popup
       return activateReaderMode(document, {
         showUnavailableNotice: false,
       });

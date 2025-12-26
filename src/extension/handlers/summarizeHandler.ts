@@ -1,10 +1,4 @@
-/**
- * Handler for summarize requests from content scripts.
- * Uses only dynamic imports to avoid module loading issues.
- */
-
 export async function handleSummarizeRequest(document: Document): Promise<void> {
-  // Use dynamic imports to avoid top-level module loading issues
   const { showSummary } = await import('../../content/readerMode');
   const { getArticleText, isReaderActive } = await import('../../content/contentScript');
 

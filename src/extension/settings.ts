@@ -1,12 +1,7 @@
-/**
- * Settings page controller. Handles AI configuration UI.
- */
-
 import { AIConfig, getAIConfig, saveAIConfig, clearAIConfig } from './storage/aiConfig';
 import { getElementById } from './ui/elements';
 import { setStatus } from './ui/status';
 
-// UI elements - wait for DOM
 let form: HTMLFormElement | null = null;
 let statusEl: HTMLElement | null = null;
 let saveBtn: HTMLButtonElement | null = null;
@@ -22,23 +17,11 @@ function getElements(): void {
   providerSelect = getElementById<HTMLSelectElement>('provider');
   customApiGroup = getElementById('custom-api-group');
 
-  // Debug: log elements found (disabled for production)
-  // Uncomment for debugging:
-  // console.log('Elements found:', {
-  //   form: !!form,
-  //   statusEl: !!statusEl,
-  //   saveBtn: !!saveBtn,
-  //   clearBtn: !!clearBtn,
-  //   providerSelect: !!providerSelect,
-  //   customApiGroup: !!customApiGroup,
-  // });
-
   if (!form || !statusEl || !saveBtn || !clearBtn || !providerSelect || !customApiGroup) {
     console.error('Some elements are missing!');
     return;
   }
 
-  // Show/hide custom API URL field based on provider
   providerSelect?.addEventListener('change', () => {
     if (customApiGroup) {
       customApiGroup.style.display = providerSelect?.value === 'custom' ? 'block' : 'none';
@@ -46,12 +29,10 @@ function getElements(): void {
   });
 }
 
-// Load existing settings
 async function initSettings(): Promise<void> {
   try {
     const config = await getAIConfig();
     if (config) {
-      // Populate form with existing config
       const apiKeyInput = document.getElementById('api-key') as HTMLInputElement;
       const modelInput = document.getElementById('model') as HTMLInputElement;
       const maxTokensInput = document.getElementById('max-tokens') as HTMLInputElement;
@@ -63,7 +44,6 @@ async function initSettings(): Promise<void> {
       if (apiBaseUrlInput) apiBaseUrlInput.value = config.apiBaseUrl || '';
       if (providerSelect) providerSelect.value = config.provider || 'groq';
 
-      // Show custom API group if needed
       if (providerSelect && providerSelect.value === 'custom' && customApiGroup) {
         customApiGroup.style.display = 'block';
       }
@@ -78,7 +58,6 @@ function showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'
   setStatus(statusEl, message, type, { autoClear: true, clearAfter: 5000 });
 }
 
-// Save settings - use button click instead of form submit to avoid URL params
 function setupSaveHandler(): void {
   if (!saveBtn || !form) {
     console.error('Save button or form not found, cannot setup handler');
@@ -107,7 +86,6 @@ function setupSaveHandler(): void {
       apiBaseUrl: (formData.get('apiBaseUrl') as string)?.trim() || undefined,
     };
 
-    // Validate custom API
     if (config.provider === 'custom' && !config.apiBaseUrl) {
       showStatus('Custom API requires a base URL', 'error');
       return;
@@ -115,7 +93,6 @@ function setupSaveHandler(): void {
 
     await saveAIConfig(config);
     
-    // Verify it was saved
     const saved = await getAIConfig();
     
     if (saved && saved.apiKey) {
@@ -124,9 +101,6 @@ function setupSaveHandler(): void {
       showStatus('Settings saved but could not verify. Please try again.', 'error');
       console.error('Save verification failed - config not found in storage');
     }
-    
-    // Don't reload - keep the form values as they are since we just saved them
-    // The values are already in the form fields
   } catch (error) {
     showStatus(`Failed to save settings: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
     console.error('Save error:', error);
@@ -134,7 +108,6 @@ function setupSaveHandler(): void {
   });
 }
 
-// Clear settings
 function setupClearHandler(): void {
   if (!clearBtn || !form) {
     console.error('Clear button or form not found, cannot setup handler');
@@ -162,9 +135,6 @@ function setupClearHandler(): void {
   });
 }
 
-// Initialize on load
-// Settings script loaded
-
 function initialize(): void {
   getElements();
   if (!form || !saveBtn || !clearBtn) {
@@ -176,16 +146,13 @@ function initialize(): void {
   setupSaveHandler();
   setupClearHandler();
   initSettings();
-  // Settings page initialized successfully
 }
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    // DOMContentLoaded fired
     initialize();
   });
 } else {
-  // DOM already ready, initializing
   initialize();
 }
 

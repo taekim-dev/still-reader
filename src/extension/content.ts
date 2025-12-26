@@ -1,8 +1,3 @@
-/**
- * Content script entry point. Listens for Chrome runtime messages and delegates
- * to the content handler.
- */
-
 import { handleReaderMessage } from './contentHandler';
 import { ReaderMessage, ReaderResponse } from './messages';
 

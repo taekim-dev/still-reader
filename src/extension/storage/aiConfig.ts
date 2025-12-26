@@ -1,22 +1,13 @@
-/**
- * Storage utilities for AI configuration.
- * Uses chrome.storage.sync for secure, synced storage across devices.
- */
-
 export interface AIConfig {
   apiKey?: string;
   provider?: 'openai' | 'anthropic' | 'gemini' | 'groq' | 'custom';
   model?: string;
   maxTokens?: number;
-  apiBaseUrl?: string; // For custom providers
+  apiBaseUrl?: string;
 }
 
 const STORAGE_KEY = 'still-reader-ai-config';
 
-/**
- * Get AI configuration from storage.
- * Returns null if not configured.
- */
 export async function getAIConfig(): Promise<AIConfig | null> {
   try {
     const result = await chrome.storage.sync.get(STORAGE_KEY);
@@ -33,9 +24,6 @@ export async function getAIConfig(): Promise<AIConfig | null> {
   }
 }
 
-/**
- * Save AI configuration to storage.
- */
 export async function saveAIConfig(config: AIConfig): Promise<void> {
   try {
     await chrome.storage.sync.set({ [STORAGE_KEY]: config });
@@ -45,9 +33,6 @@ export async function saveAIConfig(config: AIConfig): Promise<void> {
   }
 }
 
-/**
- * Clear AI configuration from storage.
- */
 export async function clearAIConfig(): Promise<void> {
   try {
     await chrome.storage.sync.remove(STORAGE_KEY);
