@@ -1,6 +1,7 @@
 import { AIConfig, getAIConfig, saveAIConfig, clearAIConfig } from './storage/aiConfig';
 import { getElementById } from './ui/elements';
 import { setStatus } from './ui/status';
+import { extractFormData, validateConfig } from './utils/formUtils';
 
 let form: HTMLFormElement | null = null;
 let statusEl: HTMLElement | null = null;
@@ -70,26 +71,14 @@ function setupSaveHandler(): void {
         console.error('Form is null');
         return;
       }
-      const formData = new FormData(form);
-    const apiKey = (formData.get('apiKey') as string)?.trim();
-    
-    if (!apiKey) {
-      showStatus('API key is required', 'error');
-      return;
-    }
-    
-    const config: AIConfig = {
-      apiKey,
-      provider: (formData.get('provider') as AIConfig['provider']) || 'groq',
-      model: (formData.get('model') as string)?.trim() || undefined,
-      maxTokens: parseInt(formData.get('maxTokens') as string) || 200,
-      apiBaseUrl: (formData.get('apiBaseUrl') as string)?.trim() || undefined,
-    };
-
-    if (config.provider === 'custom' && !config.apiBaseUrl) {
-      showStatus('Custom API requires a base URL', 'error');
-      return;
-    }
+      
+      const config = extractFormData(form) as AIConfig;
+      
+      const validation = validateConfig(config);
+      if (!validation.valid) {
+        showStatus(validation.error!, 'error');
+        return;
+      }
 
     await saveAIConfig(config);
     

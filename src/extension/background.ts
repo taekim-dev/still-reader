@@ -1,45 +1,21 @@
-import { summarizeText } from '../ai/summarizer';
-
+import { handleActivateReader, handleSummarizeCommand, handleToggleReader } from './background/commands';
+import { handleOpenOptionsPage, handleSummarizeMessage } from './background/messages';
 import { BackgroundMessage, BackgroundResponse, SummarizeMessage, SummarizeResponse } from './messages';
-import { getAIConfig } from './storage/aiConfig';
-import { getThemePreference } from './storage/theme';
 
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'toggle-reader') {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'toggle-reader' });
-      }
-    });
+    await handleToggleReader();
   } else if (command === 'activate-reader') {
-    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-      if (tabs[0]?.id) {
-        try {
-          const theme = await getThemePreference();
-          chrome.tabs.sendMessage(tabs[0].id, { 
-            type: 'activate',
-            options: { theme }
-          });
-        } catch (error) {
-          chrome.tabs.sendMessage(tabs[0].id, { 
-            type: 'activate'
-          });
-        }
-      }
-    });
+    await handleActivateReader();
   } else if (command === 'summarize') {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'summarize' });
-      }
-    });
+    await handleSummarizeCommand();
   }
 });
 
 chrome.runtime.onMessage.addListener(
   (message: SummarizeMessage | BackgroundMessage, _sender: chrome.runtime.MessageSender, sendResponse: (response: SummarizeResponse | BackgroundResponse) => void) => {
     if (message.type === 'summarize') {
-      handleSummarize((message as SummarizeMessage).text)
+      handleSummarizeMessage((message as SummarizeMessage).text)
         .then((result) => {
           sendResponse(result);
         })
@@ -54,7 +30,7 @@ chrome.runtime.onMessage.addListener(
     }
     
     if (message.type === 'openOptionsPage') {
-      chrome.runtime.openOptionsPage();
+      handleOpenOptionsPage();
       sendResponse({ ok: true });
       return false;
     }
@@ -62,20 +38,4 @@ chrome.runtime.onMessage.addListener(
     return false;
   }
 );
-
-async function handleSummarize(text: string): Promise<SummarizeResponse> {
-  const config = await getAIConfig();
-  
-  const summarizerConfig = config && config.apiKey
-    ? {
-        apiKey: config.apiKey,
-        provider: config.provider,
-        model: config.model,
-        maxTokens: config.maxTokens,
-        apiBaseUrl: config.apiBaseUrl,
-      }
-    : null;
-
-  return summarizeText(text, summarizerConfig);
-}
 

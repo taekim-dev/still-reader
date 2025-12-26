@@ -1,7 +1,17 @@
-import { ERROR_CODES, USER_MESSAGES, formatErrorMessage } from './errorMessages';
 import { ReaderMessage, ReaderResponse } from './messages';
-import { getThemePreference, saveThemePreference } from './storage/theme';
+import {
+  createActivateHandler,
+  createDeactivateHandler,
+  createFontDecHandler,
+  createFontIncHandler,
+  createSettingsHandler,
+  createSummarizeHandler,
+  createThemeToggleHandler,
+  PopupHandlers,
+} from './popup/handlers';
+import { getThemePreference } from './storage/theme';
 import { setStatus as setStatusUtil } from './ui/status';
+import { sendMessageWithRetry } from './utils/messaging';
 
 const statusEl = document.getElementById('status') as HTMLElement;
 const activateBtn = document.getElementById('activate') as HTMLButtonElement;
@@ -64,149 +74,25 @@ async function sendMessage(message: ReaderMessage): Promise<ReaderResponse> {
   if (currentTabId === null) {
     throw new Error('No active tab');
   }
-  try {
-    return await chrome.tabs.sendMessage(currentTabId, message);
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Could not establish connection')) {
-      try {
-        await chrome.scripting.executeScript({
-          target: { tabId: currentTabId },
-          files: ['content.js'],
-        });
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        return await chrome.tabs.sendMessage(currentTabId, message);
-      } catch (injectError) {
-        throw new Error(`Content script failed to load: ${injectError instanceof Error ? injectError.message : String(injectError)}`);
-      }
-    }
-    throw error;
-  }
+  return sendMessageWithRetry(currentTabId, message);
 }
 
-activateBtn.addEventListener('click', async () => {
-  try {
-    setStatus(USER_MESSAGES.ACTIVATING, 'info');
-    const theme = await getThemePreference();
-    const activateResponse = await sendMessage({ 
-      type: 'activate',
-      options: { theme }
-    });
-    if (activateResponse.ok) {
-      setStatus(USER_MESSAGES.READER_ACTIVATED, 'success');
-      updateUI(true);
-    } else {
-      if (activateResponse.reason === ERROR_CODES.ALREADY_ACTIVE) {
-        updateUI(true);
-        setStatus(USER_MESSAGES.READER_ALREADY_ACTIVE, 'info');
-      } else {
-        console.warn('Activation failed:', activateResponse.reason);
-        setStatus(formatErrorMessage(activateResponse.reason), 'error');
-      }
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    setStatus(`Failed: ${errorMessage}`, 'error');
-    console.error('Activate error:', error);
-    
-    if (errorMessage.includes('Could not establish connection') || errorMessage.includes('Receiving end does not exist')) {
-      setStatus('Content script not loaded. Try refreshing the page.', 'error');
-    }
-  }
-});
+const handlers: PopupHandlers = {
+  sendMessage,
+  setStatus,
+  updateUI,
+  updateThemeButtonLabel,
+  getCurrentTheme: () => currentTheme,
+  setCurrentTheme: (theme) => { currentTheme = theme; },
+};
 
-deactivateBtn.addEventListener('click', async () => {
-  try {
-    setStatus(USER_MESSAGES.DEACTIVATING, 'info');
-    const deactivateResponse = await sendMessage({ type: 'deactivate' });
-    if (deactivateResponse.ok) {
-      setStatus(USER_MESSAGES.READER_DEACTIVATED, 'success');
-      updateUI(false);
-    } else {
-      console.warn('Deactivation failed:', deactivateResponse.reason);
-      setStatus(formatErrorMessage(deactivateResponse.reason), 'error');
-    }
-  } catch (error) {
-    setStatus('Failed to deactivate', 'error');
-    console.error('Deactivate error:', error);
-  }
-});
-
-fontDecBtn.addEventListener('click', async () => {
-  setStatus(USER_MESSAGES.USE_IN_READER_CONTROLS, 'info');
-});
-
-fontIncBtn.addEventListener('click', async () => {
-  setStatus(USER_MESSAGES.USE_IN_READER_CONTROLS, 'info');
-});
-
-themeToggleBtn.addEventListener('click', async () => {
-  try {
-    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
-    await saveThemePreference(currentTheme);
-    updateThemeButtonLabel();
-    
-    try {
-      const response = await sendMessage({ type: 'changeTheme', theme: currentTheme });
-      if (response.ok) {
-        setStatus(`Theme: ${currentTheme === 'dark' ? 'Dark' : 'Light'}`, 'success');
-      }
-    } catch {
-      setStatus(`Theme set to ${currentTheme === 'dark' ? 'Dark' : 'Light'}`, 'success');
-    }
-  } catch (error) {
-    setStatus('Failed to change theme', 'error');
-    console.error('Theme toggle error:', error);
-  }
-});
-
-summarizeBtn.addEventListener('click', async () => {
-  try {
-    setStatus('Preparing summary...', 'info');
-
-    const pingResponse = await sendMessage({ type: 'ping' });
-    const isReaderActive = pingResponse.active ?? false;
-
-    if (!isReaderActive) {
-      setStatus('Activating reader mode...', 'info');
-      const theme = await getThemePreference();
-      const activateResponse = await sendMessage({
-        type: 'activate',
-        options: { theme },
-      });
-
-      if (!activateResponse.ok) {
-        setStatus(formatErrorMessage(activateResponse.reason), 'error');
-        return;
-      }
-      updateUI(true);
-    }
-
-    setStatus('Generating summary...', 'info');
-    const summarizeResponse = await sendMessage({ type: 'summarize' });
-
-    if (summarizeResponse.ok) {
-      setStatus('Summary will appear in reader mode', 'success');
-    } else {
-      const errorMsg = summarizeResponse.reason ?? 'Unknown error';
-      const isNotConfigured = errorMsg === 'no_api_key' || errorMsg.includes('not configured');
-      
-      if (isNotConfigured) {
-        setStatus('AI not configured. Click "Configure AI Settings" below.', 'error');
-      } else {
-        setStatus(`Summary failed: ${formatErrorMessage(errorMsg)}`, 'error');
-      }
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    setStatus(`Summary failed: ${errorMessage}`, 'error');
-    console.error('Summarize error:', error);
-  }
-});
-
-settingsBtn.addEventListener('click', () => {
-  chrome.runtime.openOptionsPage();
-});
+activateBtn.addEventListener('click', createActivateHandler(handlers));
+deactivateBtn.addEventListener('click', createDeactivateHandler(handlers));
+fontDecBtn.addEventListener('click', createFontDecHandler(handlers));
+fontIncBtn.addEventListener('click', createFontIncHandler(handlers));
+themeToggleBtn.addEventListener('click', createThemeToggleHandler(handlers));
+summarizeBtn.addEventListener('click', createSummarizeHandler(handlers));
+settingsBtn.addEventListener('click', createSettingsHandler());
 
 init();
 
