@@ -48,7 +48,7 @@ describe('extractArticle integration - real pages', () => {
       url: 'https://www.cnet.com/tech/mobile/why-samsungs-latest-chip-breakthrough-matters-for-upcoming-galaxy-phones/',
     });
 
-    const result = extractArticle(dom.window.document);
+    const result = extractArticle(dom.window.document, { useMLCleanup: false });
     expect(result.unavailable).toBeFalsy();
     if (result.unavailable) return;
 
@@ -106,7 +106,7 @@ describe('extractArticle integration - real pages', () => {
       url: 'https://www.cnet.com/tech/mobile/why-samsungs-latest-chip-breakthrough-matters-for-upcoming-galaxy-phones/',
     });
 
-    const result = extractArticle(dom.window.document);
+    const result = extractArticle(dom.window.document, { useMLCleanup: false });
     expect(result.unavailable).toBeFalsy();
     if (result.unavailable) return;
 

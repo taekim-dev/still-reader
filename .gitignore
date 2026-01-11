@@ -137,3 +137,10 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Training data (not committed to repo)
+# Ignore actual data files, but keep templates and README
+training-data/raw/*.html
+!training-data/raw/example-template*.html
+!training-data/raw/.gitkeep
+training-data/labeled-examples.json

@@ -4,9 +4,9 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+import { resetReaderMode } from '../../src/content/readerMode';
 import { handleReaderMessage } from '../../src/extension/contentHandler';
 import { ReaderMessage } from '../../src/extension/messages';
-import { resetReaderMode } from '../../src/content/readerMode';
 
 // Mock Chrome APIs
 const mockChrome = {

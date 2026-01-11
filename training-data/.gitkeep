@@ -1,0 +1,4 @@
+# This file ensures the training-data/ directory is tracked by git
+# Actual training data files (labeled-examples.json) will be gitignored
+
+

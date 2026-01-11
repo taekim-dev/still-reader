@@ -1,0 +1,144 @@
+{
+  "type": "threshold",
+  "version": "1.0.0",
+  "thresholds": {
+    "tagNameEncoded": {
+      "keepThreshold": 0.22691944221162672,
+      "removeThreshold": 0.927882008679361
+    },
+    "depth": {
+      "keepThreshold": 0.25808461668141347,
+      "removeThreshold": 0.5390916980409093
+    },
+    "childCount": {
+      "keepThreshold": 0.002150083420737539,
+      "removeThreshold": 0.0936248993357983
+    },
+    "siblingCount": {
+      "keepThreshold": 0.02859411734925467,
+      "removeThreshold": 0.26659698349754746
+    },
+    "textLength": {
+      "keepThreshold": -0.023695164273589434,
+      "removeThreshold": 0.05349101875689473
+    },
+    "paragraphCount": {
+      "keepThreshold": -0.039246250297704115,
+      "removeThreshold": 0.015166423906301102
+    },
+    "linkCount": {
+      "keepThreshold": -0.014155756565776167,
+      "removeThreshold": 0.28487603996078165
+    },
+    "linkRatio": {
+      "keepThreshold": 0.12071252391645682,
+      "removeThreshold": 0.9309184167299795
+    },
+    "imageCount": {
+      "keepThreshold": -0.02082054591690466,
+      "removeThreshold": 0.020251317855869373
+    },
+    "hasHeading": {
+      "keepThreshold": -0.0434478110309309,
+      "removeThreshold": 0.11314469651653467
+    },
+    "hasSemanticTag": {
+      "keepThreshold": -0.03723857349243792,
+      "removeThreshold": 0.028328687617655553
+    },
+    "hasList": {
+      "keepThreshold": 0.011877464653037989,
+      "removeThreshold": 0.3756840241847287
+    },
+    "hasNavPattern": {
+      "keepThreshold": 0.07948841421982508,
+      "removeThreshold": 0.6588581336392193
+    },
+    "hasAdPattern": {
+      "keepThreshold": 0,
+      "removeThreshold": 0.028328687617655553
+    },
+    "hasFooterPattern": {
+      "keepThreshold": 0,
+      "removeThreshold": 0.04156431005503197
+    },
+    "hasRelatedPattern": {
+      "keepThreshold": -0.04317612624937717,
+      "removeThreshold": 0.04156431005503197
+    },
+    "hasVideoPattern": {
+      "keepThreshold": 0,
+      "removeThreshold": 0
+    },
+    "hasMetaPattern": {
+      "keepThreshold": 0,
+      "removeThreshold": 0
+    },
+    "hasAuthorPattern": {
+      "keepThreshold": 0,
+      "removeThreshold": 0
+    },
+    "parentTagNameEncoded": {
+      "keepThreshold": 0.1908456453374453,
+      "removeThreshold": 0.9400383927787839
+    },
+    "positionInParent": {
+      "keepThreshold": 0.04331784797162816,
+      "removeThreshold": 0.4837680837987799
+    },
+    "isFirstChild": {
+      "keepThreshold": 0.4326137244506512,
+      "removeThreshold": 0.8477942064670239
+    },
+    "isLastChild": {
+      "keepThreshold": 0.14307456816049705,
+      "removeThreshold": 0.43361531837513445
+    },
+    "hasDataAttributes": {
+      "keepThreshold": 0.006400005990910479,
+      "removeThreshold": 0.34531420905614973
+    },
+    "hasAriaAttributes": {
+      "keepThreshold": -0.05650256550221517,
+      "removeThreshold": 0.0523029360615037
+    },
+    "classNameLength": {
+      "keepThreshold": 0.0634760950454822,
+      "removeThreshold": 0.14417146087252503
+    },
+    "idLength": {
+      "keepThreshold": -0.005911502854774719,
+      "removeThreshold": 0
+    }
+  },
+  "featureWeights": {
+    "tagNameEncoded": 0.6248060129683607,
+    "depth": 0.24788336752780332,
+    "childCount": 0.21772583858556963,
+    "siblingCount": 0.4019079148327814,
+    "textLength": 0.5364964810339818,
+    "paragraphCount": 0.19258486191041357,
+    "linkCount": 0.05271870508738478,
+    "linkRatio": 0.943922164573972,
+    "imageCount": 0.12002888831124221,
+    "hasHeading": 0.36120942102463055,
+    "hasSemanticTag": 0.08072694044459554,
+    "hasList": 0.08992452349026471,
+    "hasNavPattern": 0.2130966588788727,
+    "hasAdPattern": 0.10300524052492095,
+    "hasFooterPattern": 0.14586499149789459,
+    "hasRelatedPattern": 0.07945335500862735,
+    "hasVideoPattern": 0,
+    "hasMetaPattern": 0,
+    "hasAuthorPattern": 0,
+    "parentTagNameEncoded": 0.6604298030983032,
+    "positionInParent": 0.09408702735450883,
+    "isFirstChild": 0.1351723788341275,
+    "isLastChild": 0.35753430375976625,
+    "hasDataAttributes": 0.12565927616498168,
+    "hasAriaAttributes": 0.19093152705699748,
+    "classNameLength": 0.11393084697179168,
+    "idLength": 0.8382260824102442
+  },
+  "defaultKeep": false
+}

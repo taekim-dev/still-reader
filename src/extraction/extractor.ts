@@ -1,10 +1,11 @@
+import { cleanupExtractedContent } from './cleanup';
 import { NAVY_RE, SCORING_WEIGHTS, SCORING_THRESHOLDS } from './constants';
 import { isVisible, sanitizeClone } from './domUtils';
-import { cleanupExtractedContent } from './cleanup';
 
 export interface ExtractOptions {
   threshold?: number;
   baseUrl?: string;
+  useMLCleanup?: boolean;
 }
 
 export type ExtractResult =
@@ -73,10 +74,10 @@ export function extractArticle(document: Document, options: ExtractOptions = {})
     return { unavailable: true, reason: 'Confidence below threshold', confidence };
   }
 
-  // Step 8: Sanitize, cleanup, and extract final content
-  const sanitized = sanitizeClone(top.el, baseUrl);
-  cleanupExtractedContent(sanitized);
-  const html = sanitized.innerHTML.trim();
+        // Step 8: Sanitize, cleanup, and extract final content
+        const sanitized = sanitizeClone(top.el, baseUrl);
+        cleanupExtractedContent(sanitized, { useMLCleanup: options.useMLCleanup ?? true });
+        const html = sanitized.innerHTML.trim();
   const text = sanitized.textContent?.trim() ?? '';
 
   // Final validation: ensure extracted content meets minimum size

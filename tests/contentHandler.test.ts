@@ -1,8 +1,8 @@
 import { JSDOM } from 'jsdom';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { handleReaderMessage } from '../src/extension/contentHandler';
 import { resetReaderMode } from '../src/content/readerMode';
+import { handleReaderMessage } from '../src/extension/contentHandler';
 
 describe('contentHandler', () => {
   beforeEach(() => {

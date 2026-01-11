@@ -10,7 +10,10 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"tests/**/*.ts\"",
     "build": "vite build",
     "prepare": "husky install",
-    "compare-extraction": "npx tsx scripts/compare-extraction.ts"
+    "compare-extraction": "npx tsx scripts/compare-extraction.ts",
+    "generate-labels": "npx tsx scripts/generate-labels.ts",
+    "validate-training-data": "npx tsx scripts/validate-training-data.ts",
+    "train": "npx tsx scripts/train-cleanup-model.ts"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.32",
@@ -24,6 +27,7 @@
     "husky": "^8.0.3",
     "jsdom": "^23.0.1",
     "pngjs": "^7.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.3.3",
     "vite": "^5.4.21",
     "vitest": "^1.0.4"

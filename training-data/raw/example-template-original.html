@@ -1,0 +1,60 @@
+<!--
+  TEMPLATE: Original HTML (after extraction, before cleanup)
+  
+  This is what the extractArticle() function returns - the article container
+  with all its content, including ads, navigation, related content, etc.
+  
+  To create your own:
+  1. Activate reader mode on a webpage
+  2. Open DevTools and inspect the reader mode container
+  3. Copy the HTML of the <article class="sr-article"> element (or similar)
+  4. Save as: <your-example-id>-original.html
+  
+  Example filename: cnet-galaxy-chip-original.html
+-->
+
+<article class="sr-article">
+  <!-- This is the article container after extraction -->
+  <!-- It includes ALL content: article text, ads, navigation, related content, etc. -->
+  
+  <div class="article-header">
+    <h1>Article Title</h1>
+    <div class="author-info">
+      <span>By Author Name</span>
+      <time>Dec 19, 2025</time>
+    </div>
+  </div>
+  
+  <!-- ADVERTISEMENT - Should be removed -->
+  <div class="c-adDisplay_container" data-ad="interstitial">
+    <div class="ad-content">Advertisement</div>
+  </div>
+  
+  <!-- MAIN ARTICLE CONTENT - Should be kept -->
+  <div class="article-body">
+    <p>First paragraph of the article...</p>
+    <p>Second paragraph...</p>
+    
+    <!-- RELATED CONTENT - Should be removed -->
+    <div class="c-articleLinkBlock">
+      <h3>Related Articles</h3>
+      <ul>
+        <li><a href="#">Related article 1</a></li>
+        <li><a href="#">Related article 2</a></li>
+      </ul>
+    </div>
+    
+    <p>More article content...</p>
+  </div>
+  
+  <!-- AUTHOR CARD - May be removed depending on context -->
+  <div class="c-globalAuthorCard">
+    <div class="author-bio">Author biography...</div>
+  </div>
+  
+  <!-- FOOTER/NAVIGATION - Should be removed -->
+  <footer class="site-footer">
+    <nav>Navigation links...</nav>
+  </footer>
+</article>
+

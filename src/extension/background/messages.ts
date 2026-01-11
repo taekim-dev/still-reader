@@ -1,6 +1,6 @@
 import { summarizeText } from '../../ai/summarizer';
-import { getAIConfig } from '../storage/aiConfig';
 import { SummarizeResponse } from '../messages';
+import { getAIConfig } from '../storage/aiConfig';
 
 export async function handleSummarizeMessage(text: string): Promise<SummarizeResponse> {
   const config = await getAIConfig();

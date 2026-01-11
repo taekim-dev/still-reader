@@ -1,0 +1,15 @@
+{
+  "accuracy": 0.6314935064935064,
+  "precision": 0.5201465201465202,
+  "recall": 0.5966386554621849,
+  "f1": 0.5557729941291586,
+  "totalExamples": 616,
+  "keepExamples": 238,
+  "removeExamples": 378,
+  "confusionMatrix": {
+    "truePositive": 142,
+    "trueNegative": 247,
+    "falsePositive": 131,
+    "falseNegative": 96
+  }
+}

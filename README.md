@@ -4,7 +4,7 @@ A Chrome extension that provides a distraction-free reading experience by extrac
 
 ## Features
 
-- **Article Extraction**: Automatically extracts main content from web pages, removing ads, navigation, and other distractions
+- **Article Extraction**: Automatically extracts main content from web pages using machine learning-based cleanup to remove ads, navigation, and other distractions
 - **AI Summarization**: Generate concise summaries using OpenAI, Anthropic, Groq, Gemini, or custom API providers
 - **Customizable Reading Experience**: 
   - Light/dark theme support
@@ -36,14 +36,32 @@ TypeScript, Chrome Extension Manifest V3, Vite, Vitest
 
 The extension is organized into modular components:
 
-- **Extraction** (`src/extraction/`) - Content extraction algorithms and DOM analysis
+- **Extraction** (`src/extraction/`) - Content extraction algorithms, ML-based cleanup, and DOM analysis
 - **Content** (`src/content/`) - Reader mode rendering and UI management
 - **AI** (`src/ai/`) - Multi-provider summarization service
 - **Extension** (`src/extension/`) - Chrome extension integration (background, content scripts, popup, settings)
 
+## Machine Learning-Based Cleanup
+
+The extension uses a machine learning model to classify and remove non-article elements (ads, navigation, footers, etc.). For each element, the model extracts 27 features (structure, content, patterns, context) and makes keep/remove decisions with confidence scores.
+
+**Example Decision Process:**
+
+| Element | Key Features | ML Decision | Confidence | Action |
+|---------|-------------|-------------|------------|--------|
+| Article content | Long text, has heading, no ads | **KEEP** | 0.85 (high) | ✅ Keep |
+| Navigation | Nav pattern, high link ratio | **REMOVE** | 0.78 (high) | ❌ Remove |
+| Advertisement | Ad pattern, short text | **REMOVE** | 0.82 (high) | ❌ Remove |
+| Footer | Footer pattern, footer tag | **REMOVE** | 0.75 (high) | ❌ Remove |
+| Related content | Related pattern, high link ratio | **REMOVE** | 0.65 (medium) | ❌ Remove |
+
+- **High confidence (>70%)**: Uses ML prediction
+- **Low confidence (≤70%)**: Falls back to pattern matching
+- **ML failure**: Automatic fallback to pattern matching for reliability
+
 ## Scope and Limitations
 
-- **Content Extraction**: Uses heuristic algorithms for article extraction. Accuracy may vary across different website structures. Machine learning-based extraction is a potential future enhancement.
+- **Content Extraction**: Uses ML-based cleanup with pattern matching fallback. Accuracy improves with more training data.
 - **Internationalization**: Currently English-only; i18n support is planned for future releases.
 - **Accessibility**: Screen reader support is not yet implemented.
 - **Browser Support**: Chrome/Chromium-based browsers only (Manifest V3).
