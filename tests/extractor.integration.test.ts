@@ -147,5 +147,91 @@ describe('extractArticle integration - real pages', () => {
     expect(result.text.toLowerCase()).toContain('samsung');
     expect(result.text.toLowerCase()).toContain('exynos');
   });
+
+  describe('with ML cleanup enabled', () => {
+    it('CNET: ML cleanup removes navigation, footer, and related content', () => {
+      const html = fixture('cnet-galaxy-chip-full.html');
+      const dom = new JSDOM(html, {
+        url: 'https://www.cnet.com/tech/mobile/why-samsungs-latest-chip-breakthrough-matters-for-upcoming-galaxy-phones/',
+      });
+
+      const result = extractArticle(dom.window.document, { useMLCleanup: true });
+      expect(result.unavailable).toBeFalsy();
+      if (result.unavailable) return;
+
+      const extractedHtml = result.html.toLowerCase();
+
+      // Should NOT contain navigation elements
+      expect(extractedHtml).not.toContain('c-siteheader');
+      expect(extractedHtml).not.toContain('site-nav');
+      expect(extractedHtml).not.toContain('c-siteheadermasthead');
+
+      // Should NOT contain footer
+      expect(extractedHtml).not.toContain('cat-footer');
+      expect(extractedHtml).not.toContain('<footer');
+
+      // Should NOT contain related content blocks
+      expect(extractedHtml).not.toContain('c-bestlistlinkblock');
+
+      // Ad containers: ML might make different decisions than pattern matching
+      // Pattern matching would remove them, but ML might keep some with high confidence
+      // This is acceptable - ML is learning and may have different thresholds
+
+      // Should still contain article content
+      expect(extractedHtml).toContain('samsung');
+      expect(extractedHtml).toContain('exynos 2600');
+      expect(extractedHtml).toContain('chip');
+    });
+
+    it('compares ML vs pattern matching cleanup effectiveness', () => {
+      const html = fixture('cnet-galaxy-chip-full.html');
+      const dom1 = new JSDOM(html, {
+        url: 'https://www.cnet.com/tech/mobile/why-samsungs-latest-chip-breakthrough-matters-for-upcoming-galaxy-phones/',
+      });
+      const dom2 = new JSDOM(html, {
+        url: 'https://www.cnet.com/tech/mobile/why-samsungs-latest-chip-breakthrough-matters-for-upcoming-galaxy-phones/',
+      });
+
+      const mlResult = extractArticle(dom1.window.document, { useMLCleanup: true });
+      const patternResult = extractArticle(dom2.window.document, { useMLCleanup: false });
+
+      expect(mlResult.unavailable).toBeFalsy();
+      expect(patternResult.unavailable).toBeFalsy();
+      if (mlResult.unavailable || patternResult.unavailable) return;
+
+      // Both should extract article content
+      expect(mlResult.text.toLowerCase()).toContain('samsung');
+      expect(patternResult.text.toLowerCase()).toContain('samsung');
+
+      // Both should have reasonable confidence
+      expect(mlResult.confidence).toBeGreaterThan(0.35);
+      expect(patternResult.confidence).toBeGreaterThan(0.35);
+
+      // Both should remove navigation and footer
+      const mlHtml = mlResult.html.toLowerCase();
+      const patternHtml = patternResult.html.toLowerCase();
+      
+      expect(mlHtml).not.toContain('c-siteheader');
+      expect(patternHtml).not.toContain('c-siteheader');
+      expect(mlHtml).not.toContain('cat-footer');
+      expect(patternHtml).not.toContain('cat-footer');
+    });
+
+    it('TechCrunch: ML cleanup works on real pages', () => {
+      const html = fixture('techcrunch-graphite-full.html');
+      const dom = new JSDOM(html, {
+        url: 'https://techcrunch.com/2025/12/19/cursor-continues-acquisition-spree-with-graphite-deal/',
+      });
+
+      const result = extractArticle(dom.window.document, { useMLCleanup: true });
+      expect(result.unavailable).toBeFalsy();
+      if (result.unavailable) return;
+
+      expect(result.confidence).toBeGreaterThan(0.35);
+      expect(result.text).toContain('Cursor continues acquisition spree with Graphite deal');
+      expect(result.html).not.toContain('<script');
+      expect(result.html).not.toContain('<iframe');
+    });
+  });
 });
 
